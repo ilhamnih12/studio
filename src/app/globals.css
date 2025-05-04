@@ -2,80 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure html and body take full height */
+html, body, #__next {
+  height: 100%;
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  /* Prevent scrolling on body when content fits */
+  /* overflow: hidden; */
 }
 
 @layer base {
   :root {
     --background: 0 0% 100%; /* White */
     --foreground: 224 71.4% 4.1%; /* Dark Blue/Black */
+
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
+
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 180 100% 25%; /* #008080 Teal */
-    --primary-foreground: 180 100% 95%; /* Very Light Teal */
-    --secondary: 220 14.3% 95.9%; /* Light Grayish Blue */
-    --secondary-foreground: 224 71.4% 4.1%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%; /* Grayish Blue */
-    --accent: 180 80% 96%; /* Very Light Teal */
-    --accent-foreground: 180 100% 20%; /* Darker Teal */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%; /* Light Grayish Blue Border */
-    --input: 220 13% 91%;
-    --ring: 180 100% 30%; /* #009999 Teal Ring */
-    --chart-1: 180 70% 50%; /* Adjusted Chart Colors for Teal Theme */
-    --chart-2: 180 60% 45%;
-    --chart-3: 180 80% 55%;
-    --chart-4: 180 65% 60%;
-    --chart-5: 180 75% 55%;
+
+    --primary: 190 75% 40%; /* Teal */
+    --primary-foreground: 0 0% 98%; /* Near White */
+
+    --secondary: 210 40% 96.1%; /* Light Grayish Blue */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* Dark Blue/Black */
+
+    --muted: 210 40% 96.1%; /* Same as secondary */
+    --muted-foreground: 215 20.2% 65.1%; /* Medium Gray */
+
+    --accent: 210 40% 98%; /* Very Light Grayish Blue */
+    --accent-foreground: 222.2 47.4% 11.2%; /* Dark Blue/Black */
+
+    --destructive: 0 84.2% 60.2%; /* Red */
+    --destructive-foreground: 0 0% 98%; /* Near White */
+
+    --border: 214.3 31.8% 91.4%; /* Light Gray Border */
+    --input: 214.3 31.8% 91.4%; /* Light Gray Input */
+    --ring: 190 75% 50%; /* Slightly Brighter Teal Ring */
+
+    --chart-1: 190 70% 50%;
+    --chart-2: 190 60% 45%;
+    --chart-3: 190 80% 55%;
+    --chart-4: 190 65% 60%;
+    --chart-5: 190 75% 55%;
+
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%; /* Keeping sidebar distinct for now */
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 180 100% 25%;
-    --sidebar-primary-foreground: 180 100% 95%;
-    --sidebar-accent: 180 80% 96%;
-    --sidebar-accent-foreground: 180 100% 20%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 180 100% 30%;
   }
+
   .dark {
-    /* Adding basic dark mode based on teal theme */
-    --background: 224 71.4% 4.1%; /* Dark Blue/Black */
-    --foreground: 0 0% 98%; /* Near White */
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 0 0% 98%;
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 180 100% 30%; /* Lighter Teal for Dark Mode */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 220 14.3% 15.9%; /* Darker Grayish Blue */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 220 14.3% 15.9%;
-    --muted-foreground: 220 8.9% 60.1%; /* Lighter Grayish Blue */
-    --accent: 180 80% 15%; /* Dark Teal Accent Background */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 14.3% 15.9%;
-    --input: 220 14.3% 15.9%;
-    --ring: 180 100% 35%; /* Slightly brighter Teal ring for dark mode */
-    --chart-1: 180 70% 60%; /* Adjusted Dark Mode Chart Colors */
-    --chart-2: 180 60% 55%;
-    --chart-3: 180 80% 65%;
-    --chart-4: 180 65% 70%;
-    --chart-5: 180 75% 65%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 180 100% 30%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 180 80% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 180 100% 35%;
+    --background: 222.2 84% 4.9%; /* Very Dark Blue */
+    --foreground: 210 40% 98%; /* Near White */
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 190 70% 50%; /* Slightly Brighter Teal */
+    --primary-foreground: 222.2 47.4% 11.2%; /* Dark Blue/Black */
+
+    --secondary: 217.2 32.6% 17.5%; /* Dark Grayish Blue */
+    --secondary-foreground: 210 40% 98%; /* Near White */
+
+    --muted: 217.2 32.6% 17.5%; /* Same as dark secondary */
+    --muted-foreground: 215 20.2% 65.1%; /* Medium Gray (same as light) */
+
+    --accent: 217.2 32.6% 17.5%; /* Same as dark secondary */
+    --accent-foreground: 210 40% 98%; /* Near White */
+
+    --destructive: 0 62.8% 30.6%; /* Darker Red */
+    --destructive-foreground: 0 0% 98%; /* Near White */
+
+    --border: 217.2 32.6% 17.5%; /* Dark Grayish Blue Border */
+    --input: 217.2 32.6% 17.5%; /* Dark Grayish Blue Input */
+    --ring: 190 70% 55%; /* Slightly Brighter Teal Ring */
+
+    --chart-1: 190 70% 60%;
+    --chart-2: 190 60% 55%;
+    --chart-3: 190 80% 65%;
+    --chart-4: 190 65% 70%;
+    --chart-5: 190 75% 65%;
   }
 }
 
@@ -85,5 +95,18 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    /* Font smoothing */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Add specific styles for Tabs on mobile if needed */
+@media (max-width: 768px) {
+  /* Example: Customize tabs list appearance on mobile */
+  [data-orientation="horizontal"] > [role="tablist"] {
+     /* justify-content: space-around; */
   }
 }

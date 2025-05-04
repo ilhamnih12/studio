@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'WebGenius', // Update title to App Name
   description: 'Generate websites from text descriptions using AI.', // Update description
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1', // Added viewport meta tag
 };
 
 export default function RootLayout({
@@ -26,9 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="flex min-h-screen flex-col">
-          {children}
-        </div>
+        {children}
         <Toaster />
       </body>
     </html>
