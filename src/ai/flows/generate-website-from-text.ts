@@ -2,9 +2,9 @@
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow that generates website code (HTML, CSS, and JavaScript) from a textual description.
+ * @fileOverview This file defines a Genkit flow that generates website code (HTML, CSS, and JavaScript) as separate files from a textual description.
  *
- * generateWebsite - A function that generates website code from a text description.
+ * generateWebsite - A function that generates website files from a text description.
  * GenerateWebsiteInput - The input type for the generateWebsite function.
  * GenerateWebsiteOutput - The return type for the generateWebsite function.
  */
@@ -17,11 +17,14 @@ const GenerateWebsiteInputSchema = z.object({
 });
 export type GenerateWebsiteInput = z.infer<typeof GenerateWebsiteInputSchema>;
 
-const GenerateWebsiteOutputSchema = z.object({
-  html: z.string().describe('The HTML code for the website.'),
-  css: z.string().describe('The CSS code for the website.'),
-  javascript: z.string().describe('The JavaScript code for the website.'),
+// Define a schema for a single file
+const FileSchema = z.object({
+    path: z.string().describe('The full path of the file (e.g., index.html, css/style.css, js/script.js)'),
+    content: z.string().describe('The content of the file.'),
 });
+
+// Output schema is now an array of files
+const GenerateWebsiteOutputSchema = z.array(FileSchema).describe('An array of files representing the website structure.');
 export type GenerateWebsiteOutput = z.infer<typeof GenerateWebsiteOutputSchema>;
 
 export async function generateWebsite(input: GenerateWebsiteInput): Promise<GenerateWebsiteOutput> {
@@ -31,23 +34,20 @@ export async function generateWebsite(input: GenerateWebsiteInput): Promise<Gene
 const prompt = ai.definePrompt({
   name: 'generateWebsitePrompt',
   input: {
-    schema: z.object({
-      description: z.string().describe('A text description of the website to generate.'),
-    }),
+    schema: GenerateWebsiteInputSchema,
   },
   output: {
-    schema: z.object({
-      html: z.string().describe('The HTML code for the website.'),
-      css: z.string().describe('The CSS code for the website.'),
-      javascript: z.string().describe('The JavaScript code for the website.'),
-    }),
+    schema: GenerateWebsiteOutputSchema, // Use the new output schema
   },
-  prompt: `You are an AI web developer that generates HTML, CSS, and JavaScript code for a website based on a text description.
+  prompt: `You are an AI web developer. Generate the necessary HTML, CSS, and JavaScript files for a website based on the following description.
 
   Description: {{{description}}}
 
-  Generate the HTML, CSS, and JavaScript code for the website based on the description. Return the code as a JSON object with the keys "html", "css", and "javascript". Make sure each code block is complete.
-  Do not include any explanation or comments in the generated code.
+  Structure the output as an array of file objects. Each object should have a 'path' (e.g., "index.html", "style.css", "script.js") and 'content' (the code for that file).
+  - Create standard file names: index.html, style.css, script.js.
+  - If CSS or JS is simple, you can include it directly in the HTML file using <style> or <script> tags, but prefer separate files for better organization if the code is more complex. If you use separate files, ensure the HTML file includes the correct <link> tag for the CSS and <script> tag for the JavaScript.
+  - Provide complete code for each file. Do not include explanations or comments outside the code itself.
+  - Return only the JSON array of file objects.
   `,
 });
 
@@ -62,7 +62,7 @@ const generateWebsiteFlow = ai.defineFlow<
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    // Ensure output is an array, provide default empty array if not
+    return Array.isArray(output) ? output : [];
   }
 );
-
