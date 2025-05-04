@@ -1,1 +1,2 @@
-// Flows will be imported for their side effects in this file.
+import '@/ai/flows/suggest-website-updates.ts';
+import '@/ai/flows/generate-website-from-text.ts';
