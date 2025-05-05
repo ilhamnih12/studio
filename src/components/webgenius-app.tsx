@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Terminal, Download, Bot, Send, Eye, Code, File as FileIcon, Folder, Play, Save, FileCode, FileType, FileJson } from 'lucide-react'; // Added icons
+import { Terminal, Download, Bot, Send, Eye, Code, File as FileIcon, Folder, Play, FileCode, FileType, FileJson } from 'lucide-react'; // Added icons, removed Save
 import { useToast } from '@/hooks/use-toast';
 import {
   generateWebsite,
@@ -69,6 +69,55 @@ function extractCodeFromFiles(files: FileNode[]): { html: string; css: string; j
 
     return { html, css, javascript };
 }
+
+// Helper to build srcDoc with navigation script
+const buildSrcDoc = (htmlContent: string, cssContent: string, jsContent: string): string => {
+    const navigationScript = `
+        <script>
+            document.addEventListener('click', function(event) {
+                let target = event.target;
+                // Traverse up the DOM tree to find an anchor tag
+                while (target && target.tagName !== 'A') {
+                    target = target.parentElement;
+                }
+
+                if (target && target.tagName === 'A' && target.href) {
+                    const url = new URL(target.href);
+                    // Check if the link points to a file within the preview environment
+                    // (e.g., avoids external links or blob URLs)
+                    if (url.origin === window.location.origin && url.pathname !== '/' && url.pathname.includes('.')) {
+                         event.preventDefault(); // Prevent default navigation
+                         const targetPath = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
+                         // Send message to parent window to navigate the preview
+                         window.parent.postMessage({ type: 'navigatePreview', path: targetPath }, '*');
+                    }
+                }
+            });
+        </script>
+    `;
+
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Preview</title>
+            <style>
+                body { margin: 0; font-family: sans-serif; background-color: white !important; }
+                html { scroll-behavior: smooth; }
+                ${cssContent}
+            </style>
+        </head>
+        <body>
+            ${htmlContent}
+            <script>${jsContent}</script>
+            ${navigationScript}
+        </body>
+        </html>
+    `;
+};
+
 
 // --- File Explorer Component ---
 interface FileExplorerProps {
@@ -330,6 +379,7 @@ interface OutputPanelProps {
     onSelectFile: (path: string) => void;
     onFileContentChange: (path: string, newContent: string) => void;
     onRunCode: () => void; // Add callback for run button
+    previewPath: string; // Path of the file currently shown in the preview
 }
 
 const OutputPanelContent: FC<OutputPanelProps> = ({
@@ -344,6 +394,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
     onSelectFile,
     onFileContentChange,
     onRunCode,
+    previewPath, // Use this to potentially show which file is being previewed
 }) => {
     const showContent = !!files || isLoading || !!error;
     const selectedFile = useMemo(() => files?.find(f => f.path === selectedFilePath), [files, selectedFilePath]);
@@ -353,16 +404,22 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
     const editorLanguage = selectedFile ? getLanguageFromPath(selectedFile.path) : 'plaintext';
 
     // Extracted code for HTML/CSS/JS tabs (if needed, but primarily using Files tab now)
-    const { html, css, javascript } = useMemo(() => files ? extractCodeFromFiles(files) : { html: '', css: '', javascript: '' }, [files]);
+    const { html: indexHtml, css: styleCss, javascript: scriptJs } = useMemo(() => {
+        if (!files) return { html: '', css: '', javascript: '' };
+        const html = files.find(f => f.path === 'index.html')?.content || '';
+        const css = files.find(f => f.path === 'style.css')?.content || '';
+        const javascript = files.find(f => f.path === 'script.js')?.content || '';
+        return { html, css, javascript };
+    }, [files]);
 
     // Get content for the currently selected file or the specific code tab
     const editorContent = useMemo(() => {
-        if (activeOutputTab === 'html') return html;
-        if (activeOutputTab === 'css') return css;
-        if (activeOutputTab === 'js') return javascript;
+        if (activeOutputTab === 'html') return indexHtml;
+        if (activeOutputTab === 'css') return styleCss;
+        if (activeOutputTab === 'js') return scriptJs;
         if (activeOutputTab === 'files' && selectedFile) return selectedFile.content;
         return null; // No content if not a code tab or no file selected in 'files' tab
-    }, [activeOutputTab, selectedFile, html, css, javascript]);
+    }, [activeOutputTab, selectedFile, indexHtml, styleCss, scriptJs]);
 
     const handleEditorChange = useCallback((newContent: string) => {
         if (activeOutputTab === 'html') onFileContentChange('index.html', newContent);
@@ -389,7 +446,8 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                         <div>
                             <CardTitle className="text-lg md:text-xl">Output</CardTitle>
                             <CardDescription>
-                                Preview, explore files, or edit code. Click 'Run' to apply edits.
+                                {/* Updated description to mention preview path */}
+                                Preview ({previewPath}), explore files, or edit code. Click 'Run' to apply edits.
                             </CardDescription>
                         </div>
                      )}
@@ -408,13 +466,13 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                              <TabsTrigger value="files" className="text-xs px-2 h-full" disabled={!files && !isLoading}>
                                  <Folder className="w-3.5 h-3.5 mr-1" /> Files
                              </TabsTrigger>
-                              <TabsTrigger value="html" className="text-xs px-2 h-full" disabled={!files && !isLoading}>
+                              <TabsTrigger value="html" className="text-xs px-2 h-full" disabled={!indexHtml && !isLoading}>
                                  <FileCode className="w-3.5 h-3.5 mr-1" /> HTML
                              </TabsTrigger>
-                             <TabsTrigger value="css" className="text-xs px-2 h-full" disabled={!files && !isLoading}>
+                             <TabsTrigger value="css" className="text-xs px-2 h-full" disabled={!styleCss && !isLoading}>
                                  <FileType className="w-3.5 h-3.5 mr-1" /> CSS
                              </TabsTrigger>
-                             <TabsTrigger value="js" className="text-xs px-2 h-full" disabled={!files && !isLoading}>
+                             <TabsTrigger value="js" className="text-xs px-2 h-full" disabled={!scriptJs && !isLoading}>
                                  <FileJson className="w-3.5 h-3.5 mr-1" /> JS
                              </TabsTrigger>
                          </TabsList>
@@ -451,7 +509,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                                 srcDoc={previewSrcDoc}
                                 title="Website Preview"
                                 className="w-full h-full border-0 bg-white"
-                                sandbox="allow-scripts allow-same-origin"
+                                sandbox="allow-scripts allow-same-origin allow-popups allow-forms" // Added allow-popups and allow-forms for broader compatibility
                             />
                         )}
                         {/* Show loading overlay on top of existing preview during run/update */}
@@ -493,7 +551,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                      {/* HTML/CSS/JS Tabs - Now just display content, editing happens via Files tab */}
                     <TabsContent value="html" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'html'}>
                        <EditableCodeDisplay
-                           content={html}
+                           content={indexHtml}
                            language="html"
                            isLoading={isLoading && !files}
                            onChange={(newContent) => onFileContentChange('index.html', newContent)}
@@ -502,7 +560,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     </TabsContent>
                      <TabsContent value="css" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'css'}>
                        <EditableCodeDisplay
-                           content={css}
+                           content={styleCss}
                            language="css"
                            isLoading={isLoading && !files}
                            onChange={(newContent) => onFileContentChange('style.css', newContent)}
@@ -511,7 +569,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     </TabsContent>
                      <TabsContent value="js" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'js'}>
                        <EditableCodeDisplay
-                           content={javascript}
+                           content={scriptJs}
                            language="javascript"
                            isLoading={isLoading && !files}
                            onChange={(newContent) => onFileContentChange('script.js', newContent)}
@@ -535,58 +593,88 @@ const WebGeniusApp: FC = () => {
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [previewSrcDoc, setPreviewSrcDoc] = useState<string>('');
+  const [previewPath, setPreviewPath] = useState<string>('index.html'); // Track the current preview file path
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState<string>('chat');
   const [activeOutputTab, setActiveOutputTab] = useState<string>('preview'); // Default to preview
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
-  // Create srcDoc from current files state
-  const updatePreview = useCallback((currentFiles: FileNode[] | null) => {
-    if (!currentFiles) {
-        setPreviewSrcDoc('');
-        return;
-    }
+  // Create srcDoc from current files state for a specific HTML file path
+  const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html') => {
+      if (!currentFiles) {
+          setPreviewSrcDoc('');
+          setPreviewPath('');
+          return;
+      }
 
-    const { html, css, javascript } = extractCodeFromFiles(currentFiles);
+      const targetHtmlFile = currentFiles.find(f => f.path === targetPath && f.path.endsWith('.html'));
 
-    const srcDoc = `
-        <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Preview</title>
-            <style>
-              body { margin: 0; font-family: sans-serif; background-color: white !important; }
-              html { scroll-behavior: smooth; }
-              ${css}
-            </style>
-          </head>
-          <body>
-            ${html}
-            <script>${javascript}</script>
-          </body>
-        </html>
-      `;
+      if (!targetHtmlFile) {
+          console.warn(`Target HTML file "${targetPath}" not found for preview.`);
+           // Attempt to find the first HTML file as a fallback
+          const fallbackHtml = currentFiles.find(f => f.path.endsWith('.html'));
+          if (fallbackHtml) {
+              targetPath = fallbackHtml.path;
+              updatePreview(currentFiles, targetPath); // Recursively call with the fallback path
+          } else {
+              // If no HTML file found at all
+              setPreviewSrcDoc('<html><body>No HTML file found to preview.</body></html>');
+              setPreviewPath('');
+              toast({ variant: 'destructive', title: 'Preview Error', description: 'No HTML file found in the generated files.' });
+          }
+          return;
+      }
+
+      // Find associated CSS/JS (simple logic, assumes single global files or inline)
+      const cssFile = currentFiles.find(f => f.path === 'style.css');
+      const jsFile = currentFiles.find(f => f.path === 'script.js');
+
+      const cssContent = cssFile?.content || '';
+      const jsContent = jsFile?.content || ''; // Consider extracting JS specific to the target HTML if needed
+
+      const srcDoc = buildSrcDoc(targetHtmlFile.content, cssContent, jsContent);
       setPreviewSrcDoc(srcDoc);
+      setPreviewPath(targetPath); // Update the path being previewed
 
-      // Determine if we should switch tabs after update/generation
-      const shouldSwitchToOutput = isMobile && activeMobileTab === 'chat' && (html || css || javascript);
-      const shouldSwitchToPreview = html || css || javascript; // Switch to preview if there's content
+      // Tab switching logic
+      const shouldSwitchToOutput = isMobile && activeMobileTab === 'chat' && !!targetHtmlFile.content;
+      const shouldSwitchToPreview = !!targetHtmlFile.content;
 
       if (shouldSwitchToOutput) {
           setActiveMobileTab('output');
-          setActiveOutputTab('preview'); // Always default output to preview after generation/update
+          setActiveOutputTab('preview');
       } else if (!isMobile && shouldSwitchToPreview) {
            setActiveOutputTab('preview');
       } else if (!shouldSwitchToPreview) {
-          // If generation/update results in empty code, maybe switch to files tab?
           setActiveOutputTab('files');
       }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, activeMobileTab]); // Dependencies for tab switching logic
+  }, [isMobile, activeMobileTab, toast]); // Added toast
+
+  // Effect to handle messages from the iframe (for navigation)
+  useEffect(() => {
+      const handleMessage = (event: MessageEvent) => {
+          if (event.source !== window && event.data && event.data.type === 'navigatePreview') {
+              const targetPath = event.data.path;
+              console.log("Received navigation request for:", targetPath); // Debug log
+              if (files && targetPath) {
+                  const targetExists = files.some(f => f.path === targetPath && f.path.endsWith('.html'));
+                  if (targetExists) {
+                      updatePreview(files, targetPath);
+                  } else {
+                      toast({ variant: 'destructive', title: 'Navigation Error', description: `File "${targetPath}" not found.` });
+                  }
+              }
+          }
+      };
+
+      window.addEventListener('message', handleMessage);
+      return () => {
+          window.removeEventListener('message', handleMessage);
+      };
+  }, [files, updatePreview, toast]);
 
 
   // Handler for selecting a file in the explorer
@@ -623,7 +711,8 @@ const WebGeniusApp: FC = () => {
         // Simulate a short delay for visual feedback, then update preview
         setTimeout(() => {
             try {
-                updatePreview(files); // Update preview with current state of files
+                // Update preview with current state of files, keeping the current preview path
+                updatePreview(files, previewPath);
                 toast({ title: 'Preview Updated', description: 'Changes applied to the preview.' });
                  setActiveOutputTab('preview'); // Switch to preview after running
             } catch (err) {
@@ -634,7 +723,7 @@ const WebGeniusApp: FC = () => {
                 setIsLoading(false);
             }
         }, 300); // Small delay
-    }, [files, updatePreview, toast]);
+    }, [files, updatePreview, previewPath, toast]); // Added previewPath dependency
 
 
   const handleGenerateWebsite = useCallback(async () => {
@@ -659,11 +748,12 @@ const WebGeniusApp: FC = () => {
                type: 'file', // Assume all are files for now
            }));
            setFiles(newFiles);
-           updatePreview(newFiles); // Update preview after setting files
+           // Update preview starting with index.html or the first HTML file
+           const initialHtmlPath = newFiles.find(f => f.path === 'index.html')?.path || newFiles.find(f => f.path.endsWith('.html'))?.path || 'index.html';
+           updatePreview(newFiles, initialHtmlPath);
 
-           // Find index.html or the first HTML file to select
-           const htmlFile = newFiles.find(f => f.path === 'index.html') || newFiles.find(f => f.path.endsWith('.html'));
-           setSelectedFilePath(htmlFile ? htmlFile.path : (newFiles[0]?.path || null)); // Select HTML or first file
+           // Select the initially previewed HTML file in the editor/explorer
+           setSelectedFilePath(initialHtmlPath || (newFiles[0]?.path || null));
 
            toast({ title: 'Website Generated', description: 'Files created successfully!' });
        } else {
@@ -721,13 +811,19 @@ const WebGeniusApp: FC = () => {
 
 
             setFiles(updatedFilesResult);
-            updatePreview(updatedFilesResult); // Update preview after setting files
+            // Update preview starting with index.html or the first HTML file after update
+            const initialHtmlPath = updatedFilesResult.find(f => f.path === 'index.html')?.path || updatedFilesResult.find(f => f.path.endsWith('.html'))?.path || 'index.html';
+            updatePreview(updatedFilesResult, initialHtmlPath);
+
             setUserFeedback(''); // Clear feedback input
 
             // Reselect the currently selected file if it still exists
             const currentSelected = selectedFilePath;
             if (currentSelected && !updatedFilesResult.some(f => f.path === currentSelected)) {
                 // If the previously selected file is gone, select the first one
+                 setSelectedFilePath(updatedFilesResult[0]?.path || null);
+            } else if (!currentSelected && updatedFilesResult.length > 0) {
+                 // If nothing was selected before, select the first file
                  setSelectedFilePath(updatedFilesResult[0]?.path || null);
             }
 
@@ -764,34 +860,106 @@ const WebGeniusApp: FC = () => {
     const cssFile = files.find(f => f.path === 'style.css') || files.find(f => f.path.endsWith('.css'));
     const jsFile = files.find(f => f.path === 'script.js') || files.find(f => f.path.endsWith('.js'));
 
-     const fullHtmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generated Website</title>
-    ${cssFile ? `<link rel="stylesheet" href="${cssFile.path}">` : (extractCodeFromFiles(files).css ? `<style>\n${extractCodeFromFiles(files).css}\n    </style>` : '')}
-</head>
-<body>
-${htmlFile.content || '<!-- No HTML content -->'}
-    ${jsFile ? `<script src="${jsFile.path}"></script>` : (extractCodeFromFiles(files).javascript ? `<script>\n${extractCodeFromFiles(files).javascript}\n    </script>` : '')}
-</body>
-</html>
-    `;
+     // Helper function to create a relative path if files are in subdirectories
+     const getRelativePath = (targetPath: string, basePath: string): string => {
+        // Basic implementation assuming simple structures
+        const targetParts = targetPath.split('/');
+        const baseParts = basePath.split('/');
+        baseParts.pop(); // Remove filename from base path
 
-     // For simplicity in this example, we download only the main HTML file with embedded or linked resources.
-     // A more robust solution would involve zipping all files.
-    const blob = new Blob([fullHtmlContent.trim()], { type: 'text/html;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = htmlFile.path; // Use the original HTML filename
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
+        let commonPrefix = 0;
+        while (commonPrefix < targetParts.length && commonPrefix < baseParts.length && targetParts[commonPrefix] === baseParts[commonPrefix]) {
+            commonPrefix++;
+        }
 
-    toast({ title: 'Code Downloaded', description: `Main file ${htmlFile.path} downloaded. Note: Linked CSS/JS files are not included in this single download.` });
+        const levelsUp = baseParts.length - commonPrefix;
+        const remainingPath = targetParts.slice(commonPrefix).join('/');
+
+        return (levelsUp > 0 ? '../'.repeat(levelsUp) : './') + remainingPath;
+     }
+
+     // Build the final HTML content, linking to external files if they exist
+     const buildFinalHtml = (htmlNode: FileNode): string => {
+        let content = htmlNode.content;
+
+        // Link CSS
+        const cssFileToLink = files.find(f => f.path.endsWith('.css'));
+        if (cssFileToLink) {
+            const cssPathRelative = getRelativePath(cssFileToLink.path, htmlNode.path);
+            const linkTag = `<link rel="stylesheet" href="${cssPathRelative}">`;
+            if (content.includes('</head>')) {
+                content = content.replace('</head>', `    ${linkTag}\n</head>`);
+            } else {
+                content = `<head>\n    ${linkTag}\n</head>\n${content}`; // Add head if missing
+            }
+        }
+
+        // Link JS
+        const jsFileToLink = files.find(f => f.path.endsWith('.js'));
+         if (jsFileToLink) {
+            const jsPathRelative = getRelativePath(jsFileToLink.path, htmlNode.path);
+            const scriptTag = `<script src="${jsPathRelative}" defer></script>`; // Use defer for better performance
+            if (content.includes('</body>')) {
+                 content = content.replace('</body>', `    ${scriptTag}\n</body>`);
+             } else {
+                 content = `${content}\n${scriptTag}`; // Append if body closing tag missing
+             }
+         }
+
+        return `<!DOCTYPE html>\n<html lang="en">\n${content}\n</html>`;
+     };
+
+     // Create a zip file containing all generated files
+     import('jszip').then(async JSZip => {
+         const zip = new JSZip.default(); // Use .default for commonjs/module interop
+
+         files.forEach(file => {
+            let fileContent = file.content;
+            // If it's the main HTML file, build it with links
+             if (file.path === htmlFile.path) {
+                 // We might not need to rebuild if AI already linked correctly
+                 // Check if links already exist, otherwise inject them
+                 let needsCssLink = files.some(f => f.path.endsWith('.css')) && !content.includes('<link rel="stylesheet"');
+                 let needsJsLink = files.some(f => f.path.endsWith('.js')) && !content.includes('<script src=');
+
+                 if (needsCssLink || needsJsLink) {
+                     fileContent = buildFinalHtml(file); // Rebuild with proper links if missing
+                 } else {
+                     // Basic ensure Doctype/html tags
+                     if (!fileContent.trim().startsWith('<!DOCTYPE html>')) {
+                        fileContent = `<!DOCTYPE html>\n<html lang="en">\n${fileContent}\n</html>`;
+                     }
+                 }
+             }
+             zip.file(file.path, fileContent);
+         });
+
+         const zipBlob = await zip.generateAsync({ type: 'blob' });
+         const link = document.createElement('a');
+         link.href = URL.createObjectURL(zipBlob);
+         link.download = 'website.zip';
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
+         URL.revokeObjectURL(link.href);
+
+         toast({ title: 'Website Downloaded', description: 'All files downloaded as website.zip.' });
+     }).catch(err => {
+         console.error("Failed to create zip file:", err);
+         toast({ variant: 'destructive', title: 'Download Error', description: 'Failed to create zip file. Check console.' });
+         // Fallback to downloading just HTML if zipping fails
+         const fallbackBlob = new Blob([buildFinalHtml(htmlFile)], { type: 'text/html;charset=utf-8' });
+         const fallbackLink = document.createElement('a');
+         fallbackLink.href = URL.createObjectURL(fallbackBlob);
+         fallbackLink.download = htmlFile.path;
+         document.body.appendChild(fallbackLink);
+         fallbackLink.click();
+         document.body.removeChild(fallbackLink);
+         URL.revokeObjectURL(fallbackLink.href);
+         toast({ variant: 'default', title: 'Downloaded HTML Only', description: 'Could not zip files, downloaded main HTML.' });
+     });
+
+
   }, [files, toast]);
 
 
@@ -854,6 +1022,7 @@ ${htmlFile.content || '<!-- No HTML content -->'}
                         onSelectFile={handleSelectFile}
                         onFileContentChange={handleFileContentChange}
                         onRunCode={handleRunCode}
+                        previewPath={previewPath} // Pass previewPath
                      />
                  </TabsContent>
 
@@ -913,6 +1082,7 @@ ${htmlFile.content || '<!-- No HTML content -->'}
                     onSelectFile={handleSelectFile}
                     onFileContentChange={handleFileContentChange}
                     onRunCode={handleRunCode}
+                    previewPath={previewPath} // Pass previewPath
                  />
               </ResizablePanel>
             </ResizablePanelGroup>
