@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Terminal, Download, Bot, Send, Eye, Code, File as FileIcon, Folder, Play, FileCode, FileType, FileJson } from 'lucide-react'; // Added icons, removed Save
+import { Terminal, Download, Bot, Send, Eye, Code, File as FileIcon, Folder, Play, FileCode, FileType, FileJson } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   generateWebsite,
@@ -32,7 +32,7 @@ import {
 import {
   suggestWebsiteUpdates,
   type SuggestWebsiteUpdatesOutput,
-  type FileSchema as UpdateFileSchema, // Import the schema directly
+  type FileSchema as UpdateFileSchema,
 } from '@/ai/flows/suggest-website-updates';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils';
 interface FileNode {
     path: string;
     content: string;
-    type: 'file' | 'folder'; // Folders might not have content initially
+    type: 'file' | 'folder'; 
 }
 
 // --- Helper Functions ---
@@ -56,39 +56,20 @@ function getLanguageFromPath(path: string): string {
     }
 }
 
-// Extracts code from FileNode array, prioritizing standard names
-function extractCodeFromFiles(files: FileNode[]): { html: string; css: string; javascript: string } {
-    let html = files.find(f => f.path === 'index.html')?.content || '';
-    let css = files.find(f => f.path === 'style.css')?.content || '';
-    let javascript = files.find(f => f.path === 'script.js')?.content || '';
-
-    // Fallback if standard names aren't used (simple check)
-    if (!html) html = files.find(f => f.path.endsWith('.html'))?.content || '';
-    if (!css) css = files.find(f => f.path.endsWith('.css'))?.content || '';
-    if (!javascript) javascript = files.find(f => f.path.endsWith('.js'))?.content || '';
-
-    return { html, css, javascript };
-}
-
-// Helper to build srcDoc with navigation script
 const buildSrcDoc = (htmlContent: string, cssContent: string, jsContent: string): string => {
     const navigationScript = `
         <script>
             document.addEventListener('click', function(event) {
                 let target = event.target;
-                // Traverse up the DOM tree to find an anchor tag
                 while (target && target.tagName !== 'A') {
                     target = target.parentElement;
                 }
 
                 if (target && target.tagName === 'A' && target.href) {
                     const url = new URL(target.href);
-                    // Check if the link points to a file within the preview environment
-                    // (e.g., avoids external links or blob URLs)
                     if (url.origin === window.location.origin && url.pathname !== '/' && url.pathname.includes('.')) {
-                         event.preventDefault(); // Prevent default navigation
+                         event.preventDefault(); 
                          const targetPath = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
-                         // Send message to parent window to navigate the preview
                          window.parent.postMessage({ type: 'navigatePreview', path: targetPath }, '*');
                     }
                 }
@@ -101,7 +82,7 @@ const buildSrcDoc = (htmlContent: string, cssContent: string, jsContent: string)
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="viewport" content="width-device-width, initial-scale=1.0">
             <title>Preview</title>
             <style>
                 body { margin: 0; font-family: sans-serif; background-color: white !important; }
@@ -147,7 +128,6 @@ const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelect
         );
     }
 
-    // Basic list view for now, could be enhanced with tree structure later
     return (
         <ScrollArea className={cn("h-full", className)}>
             <div className="p-1 space-y-0.5">
@@ -166,10 +146,6 @@ const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelect
                         <span className="truncate">{file.path}</span>
                     </Button>
                 ))}
-                {/* Add Folder Button (Future enhancement) */}
-                {/* <Button variant="outline" size="sm" className="mt-2 w-full h-7 text-xs">
-                    <FolderPlus className="w-3.5 h-3.5 mr-1.5" /> Add Folder
-                </Button> */}
             </div>
         </ScrollArea>
     );
@@ -214,7 +190,7 @@ const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, 
             placeholder={`// ${language} code...`}
             className={cn(
                 "font-mono text-sm h-full w-full resize-none border rounded-md bg-muted/20 focus-visible:ring-1 focus-visible:ring-ring p-4",
-                 "whitespace-pre overflow-auto", // Ensure proper code formatting
+                 "whitespace-pre overflow-auto", 
                  className
             )}
             spellCheck="false"
@@ -229,7 +205,7 @@ interface InputPanelProps {
     setDescription: (value: string) => void;
     userFeedback: string;
     setUserFeedback: (value: string) => void;
-    hasGeneratedCode: boolean; // Changed from websiteCode prop
+    hasGeneratedCode: boolean;
     isLoading: boolean;
     isGenerating: boolean;
     isUpdating: boolean;
@@ -244,7 +220,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
     setDescription,
     userFeedback,
     setUserFeedback,
-    hasGeneratedCode, // Use boolean flag
+    hasGeneratedCode,
     isLoading,
     isGenerating,
     isUpdating,
@@ -253,26 +229,11 @@ const InputPanelContent: FC<InputPanelProps> = ({
     error,
     isMobile,
 }) => {
-    // Keep local state for inputs
-    const [localDescription, setLocalDescription] = useState(description);
-    const [localFeedback, setLocalFeedback] = useState(userFeedback);
-
-    useEffect(() => {
-        setLocalDescription(description);
-    }, [description]);
-
-    useEffect(() => {
-        setLocalFeedback(userFeedback);
-    }, [userFeedback]);
-
-    // Update parent state on change (simpler approach)
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setLocalDescription(e.target.value);
-        setDescription(e.target.value); // Update parent immediately
+        setDescription(e.target.value);
     };
     const handleFeedbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setLocalFeedback(e.target.value);
-        setUserFeedback(e.target.value); // Update parent immediately
+        setUserFeedback(e.target.value);
     };
 
    return (
@@ -293,26 +254,25 @@ const InputPanelContent: FC<InputPanelProps> = ({
                     <Textarea
                         id="description"
                         placeholder="e.g., A landing page for a coffee shop..."
-                        value={localDescription}
-                        onChange={handleDescriptionChange} // Use immediate update
+                        value={description}
+                        onChange={handleDescriptionChange}
                         className="flex-grow min-h-[150px] resize-none text-sm"
                         disabled={isLoading}
                     />
                 </div>
-                {/* Update Section */}
-                {hasGeneratedCode && ( // Check boolean flag
+                {hasGeneratedCode && (
                     <div className="pt-4 border-t space-y-2">
                         <Label htmlFor="feedback">Request Updates (Optional)</Label>
                         <div className="flex gap-2 items-center">
                             <Input
                                 id="feedback"
                                 placeholder="e.g., Change the background to light blue"
-                                value={localFeedback}
-                                onChange={handleFeedbackChange} // Use immediate update
+                                value={userFeedback}
+                                onChange={handleFeedbackChange}
                                 disabled={isLoading}
                                 className="flex-grow h-10 text-sm"
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey && localFeedback.trim()) {
+                                    if (e.key === 'Enter' && !e.shiftKey && userFeedback.trim()) {
                                         e.preventDefault();
                                         handleUpdateWebsite();
                                     }
@@ -320,7 +280,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
                             />
                             <Button
                                 onClick={handleUpdateWebsite}
-                                disabled={isLoading || !localFeedback.trim()}
+                                disabled={isLoading || !userFeedback.trim()}
                                 size="icon"
                                 variant="ghost"
                                 aria-label="Send Feedback"
@@ -335,10 +295,9 @@ const InputPanelContent: FC<InputPanelProps> = ({
             <CardFooter className="flex flex-col gap-2 items-stretch pt-2 md:pt-6">
                 <Button
                     onClick={handleGenerateWebsite}
-                    disabled={isLoading || !localDescription.trim()}
+                    disabled={isLoading || !description.trim()}
                     size={isMobile ? "lg" : "default"}
                 >
-                    {/* Loading indicators remain the same */}
                     {isGenerating ? (
                         <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...</>
                     ) : isUpdating ? (
@@ -366,7 +325,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
    );
 };
 
-// --- Output Panel Component (Modified) ---
+// --- Output Panel Component ---
 interface OutputPanelProps {
     files: FileNode[] | null;
     isLoading: boolean;
@@ -378,8 +337,8 @@ interface OutputPanelProps {
     selectedFilePath: string | null;
     onSelectFile: (path: string) => void;
     onFileContentChange: (path: string, newContent: string) => void;
-    onRunCode: () => void; // Add callback for run button
-    previewPath: string; // Path of the file currently shown in the preview
+    onRunCode: () => void;
+    previewPath: string;
 }
 
 const OutputPanelContent: FC<OutputPanelProps> = ({
@@ -394,16 +353,11 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
     onSelectFile,
     onFileContentChange,
     onRunCode,
-    previewPath, // Use this to potentially show which file is being previewed
+    previewPath,
 }) => {
-    const showContent = !!files || isLoading || !!error;
     const selectedFile = useMemo(() => files?.find(f => f.path === selectedFilePath), [files, selectedFilePath]);
-
-    // Determine which tab should host the editor (Files or specific code tabs)
-    const isEditorTabActive = ['files', 'html', 'css', 'js'].includes(activeOutputTab);
     const editorLanguage = selectedFile ? getLanguageFromPath(selectedFile.path) : 'plaintext';
 
-    // Extracted code for HTML/CSS/JS tabs (if needed, but primarily using Files tab now)
     const { html: indexHtml, css: styleCss, javascript: scriptJs } = useMemo(() => {
         if (!files) return { html: '', css: '', javascript: '' };
         const html = files.find(f => f.path === 'index.html')?.content || '';
@@ -412,13 +366,12 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
         return { html, css, javascript };
     }, [files]);
 
-    // Get content for the currently selected file or the specific code tab
     const editorContent = useMemo(() => {
         if (activeOutputTab === 'html') return indexHtml;
         if (activeOutputTab === 'css') return styleCss;
         if (activeOutputTab === 'js') return scriptJs;
         if (activeOutputTab === 'files' && selectedFile) return selectedFile.content;
-        return null; // No content if not a code tab or no file selected in 'files' tab
+        return null;
     }, [activeOutputTab, selectedFile, indexHtml, styleCss, scriptJs]);
 
     const handleEditorChange = useCallback((newContent: string) => {
@@ -440,26 +393,24 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                  <CardHeader className={cn(
                      "flex flex-row items-center justify-between pb-2 pt-2 md:pt-4",
                      isMobile ? 'border-b' : '',
-                     "relative" // Make header relative for absolute positioning of Run button
+                     "relative"
                  )}>
                     {!isMobile && (
                         <div>
                             <CardTitle className="text-lg md:text-xl">Output</CardTitle>
                             <CardDescription>
-                                {/* Updated description to mention preview path */}
-                                Preview ({previewPath}), explore files, or edit code. Click 'Run' to apply edits.
+                                Preview ({previewPath || 'N/A'}), explore files, or edit code. Click 'Run' to apply edits.
                             </CardDescription>
                         </div>
                      )}
                      <div className={cn(
                          "flex items-center gap-1",
-                          isMobile ? 'w-full justify-between' : 'ml-auto' // Take full width on mobile
+                          isMobile ? 'w-full justify-between' : 'ml-auto'
                       )}>
                          <TabsList className={cn(
-                             "grid grid-cols-5 gap-1 h-9", // Increased to 5 cols
+                             "grid grid-cols-5 gap-1 h-9",
                              isMobile ? 'flex-grow' : ''
                          )}>
-                            {/* Adjusted TabsTrigger */}
                              <TabsTrigger value="preview" className="text-xs px-2 h-full" disabled={!previewSrcDoc && !isLoading && !error}>
                                  <Eye className="w-3.5 h-3.5 mr-1" /> Preview
                              </TabsTrigger>
@@ -491,11 +442,9 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                  </CardHeader>
 
                  <CardContent className="flex-grow p-0 overflow-auto relative">
-                     {/* Preview Tab */}
                      <TabsContent value="preview" className="mt-0 h-full w-full absolute inset-0" hidden={activeOutputTab !== 'preview'}>
-                        {isLoading && !files && ( // Loading skeleton only if no files yet
+                        {isLoading && !files && (
                             <div className="flex items-center justify-center h-full bg-background">
-                                {/* Skeleton remains the same */}
                                 <div className="space-y-4 p-4 w-full max-w-md"><Skeleton className="h-12 w-3/4" /><Skeleton className="h-6 w-full" /><Skeleton className="h-6 w-5/6" /><Skeleton className="h-24 w-full" /><Skeleton className="h-6 w-1/2" /></div>
                             </div>
                         )}
@@ -504,15 +453,14 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                                 <p>Enter a description and click "Generate Website" to see the output.</p>
                             </div>
                         )}
-                        {previewSrcDoc && !isLoading && ( // Show iframe only if not loading
+                        {previewSrcDoc && !isLoading && (
                             <iframe
                                 srcDoc={previewSrcDoc}
                                 title="Website Preview"
                                 className="w-full h-full border-0 bg-white"
-                                sandbox="allow-scripts allow-same-origin allow-popups allow-forms" // Added allow-popups and allow-forms for broader compatibility
+                                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                             />
                         )}
-                        {/* Show loading overlay on top of existing preview during run/update */}
                         {isLoading && files && (
                              <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
                                 <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -521,14 +469,13 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                                 </svg>
                              </div>
                          )}
-                        {error && !files && ( // Error shown only if generation failed initially
+                        {error && !files && (
                              <div className="flex items-center justify-center h-full text-destructive p-4 text-center bg-background">
                                 <p>An error occurred. Please check the input panel.</p>
                             </div>
                         )}
                      </TabsContent>
 
-                    {/* Files Tab - Contains Explorer and Editor */}
                     <TabsContent value="files" className="mt-0 h-full w-full absolute inset-0 flex flex-col md:flex-row" hidden={activeOutputTab !== 'files'}>
                         <FileExplorer
                             files={files}
@@ -541,14 +488,13 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                             <EditableCodeDisplay
                                 content={selectedFile?.content ?? null}
                                 language={editorLanguage}
-                                isLoading={isLoading && !selectedFile} // Loading if fetching or no file selected yet
+                                isLoading={isLoading && !selectedFile}
                                 onChange={handleEditorChange}
                                 className="absolute inset-0"
                             />
                          </div>
                     </TabsContent>
 
-                     {/* HTML/CSS/JS Tabs - Now just display content, editing happens via Files tab */}
                     <TabsContent value="html" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'html'}>
                        <EditableCodeDisplay
                            content={indexHtml}
@@ -585,7 +531,6 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
 
 const WebGeniusApp: FC = () => {
   const [description, setDescription] = useState<string>('');
-  // Store files instead of separate html, css, js
   const [files, setFiles] = useState<FileNode[] | null>(null);
   const [userFeedback, setUserFeedback] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -593,14 +538,13 @@ const WebGeniusApp: FC = () => {
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [previewSrcDoc, setPreviewSrcDoc] = useState<string>('');
-  const [previewPath, setPreviewPath] = useState<string>('index.html'); // Track the current preview file path
+  const [previewPath, setPreviewPath] = useState<string>('index.html');
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [activeMobileTab, setActiveMobileTab] = useState<string>('chat');
-  const [activeOutputTab, setActiveOutputTab] = useState<string>('preview'); // Default to preview
+  const [activeOutputTab, setActiveOutputTab] = useState<string>('preview');
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
-  // Create srcDoc from current files state for a specific HTML file path
   const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html') => {
       if (!currentFiles) {
           setPreviewSrcDoc('');
@@ -611,14 +555,19 @@ const WebGeniusApp: FC = () => {
       const targetHtmlFile = currentFiles.find(f => f.path === targetPath && f.path.endsWith('.html'));
 
       if (!targetHtmlFile) {
-          console.warn(`Target HTML file "${targetPath}" not found for preview.`);
-           // Attempt to find the first HTML file as a fallback
           const fallbackHtml = currentFiles.find(f => f.path.endsWith('.html'));
           if (fallbackHtml) {
               targetPath = fallbackHtml.path;
-              updatePreview(currentFiles, targetPath); // Recursively call with the fallback path
+              // Recursive call with the fallback path, ensure it's not an infinite loop
+              // This check prevents recursion if fallback is same as initial targetPath and not found
+              if (targetPath !== (arguments[1] || 'index.html')) {
+                updatePreview(currentFiles, targetPath);
+              } else {
+                setPreviewSrcDoc('<html><body>No suitable HTML file found to preview.</body></html>');
+                setPreviewPath('');
+                toast({ variant: 'destructive', title: 'Preview Error', description: `Target HTML file "${targetPath}" not found and no alternative found.` });
+              }
           } else {
-              // If no HTML file found at all
               setPreviewSrcDoc('<html><body>No HTML file found to preview.</body></html>');
               setPreviewPath('');
               toast({ variant: 'destructive', title: 'Preview Error', description: 'No HTML file found in the generated files.' });
@@ -626,39 +575,30 @@ const WebGeniusApp: FC = () => {
           return;
       }
 
-      // Find associated CSS/JS (simple logic, assumes single global files or inline)
       const cssFile = currentFiles.find(f => f.path === 'style.css');
       const jsFile = currentFiles.find(f => f.path === 'script.js');
 
       const cssContent = cssFile?.content || '';
-      const jsContent = jsFile?.content || ''; // Consider extracting JS specific to the target HTML if needed
+      const jsContent = jsFile?.content || '';
 
       const srcDoc = buildSrcDoc(targetHtmlFile.content, cssContent, jsContent);
       setPreviewSrcDoc(srcDoc);
-      setPreviewPath(targetPath); // Update the path being previewed
+      setPreviewPath(targetPath);
 
-      // Tab switching logic
-      const shouldSwitchToOutput = isMobile && activeMobileTab === 'chat' && !!targetHtmlFile.content;
-      const shouldSwitchToPreview = !!targetHtmlFile.content;
-
-      if (shouldSwitchToOutput) {
+      if (isMobile === true && activeMobileTab === 'chat' && !!targetHtmlFile.content) {
           setActiveMobileTab('output');
           setActiveOutputTab('preview');
-      } else if (!isMobile && shouldSwitchToPreview) {
+      } else if (isMobile === false && !!targetHtmlFile.content) {
            setActiveOutputTab('preview');
-      } else if (!shouldSwitchToPreview) {
+      } else if (!targetHtmlFile.content) {
           setActiveOutputTab('files');
       }
+  }, [isMobile, activeMobileTab, toast]); 
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, activeMobileTab, toast]); // Added toast
-
-  // Effect to handle messages from the iframe (for navigation)
   useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
           if (event.source !== window && event.data && event.data.type === 'navigatePreview') {
               const targetPath = event.data.path;
-              console.log("Received navigation request for:", targetPath); // Debug log
               if (files && targetPath) {
                   const targetExists = files.some(f => f.path === targetPath && f.path.endsWith('.html'));
                   if (targetExists) {
@@ -677,19 +617,15 @@ const WebGeniusApp: FC = () => {
   }, [files, updatePreview, toast]);
 
 
-  // Handler for selecting a file in the explorer
   const handleSelectFile = useCallback((path: string) => {
       setSelectedFilePath(path);
-      // Optionally switch to 'files' tab if another code tab was active
       if (['html', 'css', 'js'].includes(activeOutputTab)) {
           setActiveOutputTab('files');
       } else {
-          // If preview or files tab was already active, stay there
           setActiveOutputTab(activeOutputTab);
       }
   }, [activeOutputTab]);
 
-  // Handler for updating file content from the editor
   const handleFileContentChange = useCallback((path: string, newContent: string) => {
       setFiles(currentFiles => {
           if (!currentFiles) return null;
@@ -697,24 +633,20 @@ const WebGeniusApp: FC = () => {
               file.path === path ? { ...file, content: newContent } : file
           );
       });
-      // We don't update preview here automatically, wait for Run button
   }, []);
 
-   // Handler for the "Run" button
     const handleRunCode = useCallback(() => {
         if (!files) {
             toast({ variant: 'destructive', title: 'Run Error', description: 'No code to run.' });
             return;
         }
-        setIsLoading(true); // Show loading indicator on preview
+        setIsLoading(true);
         setError(null);
-        // Simulate a short delay for visual feedback, then update preview
         setTimeout(() => {
             try {
-                // Update preview with current state of files, keeping the current preview path
                 updatePreview(files, previewPath);
                 toast({ title: 'Preview Updated', description: 'Changes applied to the preview.' });
-                 setActiveOutputTab('preview'); // Switch to preview after running
+                 setActiveOutputTab('preview');
             } catch (err) {
                  console.error('Error updating preview:', err);
                  setError('Failed to update preview.');
@@ -722,8 +654,8 @@ const WebGeniusApp: FC = () => {
             } finally {
                 setIsLoading(false);
             }
-        }, 300); // Small delay
-    }, [files, updatePreview, previewPath, toast]); // Added previewPath dependency
+        }, 300);
+    }, [files, updatePreview, previewPath, toast]);
 
 
   const handleGenerateWebsite = useCallback(async () => {
@@ -735,26 +667,19 @@ const WebGeniusApp: FC = () => {
     setIsGenerating(true);
     setIsUpdating(false);
     setError(null);
-    // Don't clear files, allow regeneration over existing
-    // setPreviewSrcDoc(''); // Clear preview immediately
-
+    
     try {
       const result: GenerateWebsiteOutput = await generateWebsite({ description });
-       // Validate the result is an array of files
        if (Array.isArray(result)) {
            const newFiles: FileNode[] = result.map(file => ({
                path: file.path,
                content: file.content,
-               type: 'file', // Assume all are files for now
+               type: 'file',
            }));
            setFiles(newFiles);
-           // Update preview starting with index.html or the first HTML file
            const initialHtmlPath = newFiles.find(f => f.path === 'index.html')?.path || newFiles.find(f => f.path.endsWith('.html'))?.path || 'index.html';
            updatePreview(newFiles, initialHtmlPath);
-
-           // Select the initially previewed HTML file in the editor/explorer
            setSelectedFilePath(initialHtmlPath || (newFiles[0]?.path || null));
-
            toast({ title: 'Website Generated', description: 'Files created successfully!' });
        } else {
            throw new Error('AI response was not in the expected format (array of files).');
@@ -763,7 +688,7 @@ const WebGeniusApp: FC = () => {
       console.error('Error generating website:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to generate website. ${errorMessage}`);
-      setFiles(null); // Clear files on error
+      setFiles(null);
       updatePreview(null);
       toast({ variant: 'destructive', title: 'Generation Failed', description: `Error: ${errorMessage}` });
     } finally {
@@ -791,49 +716,37 @@ const WebGeniusApp: FC = () => {
         setError(null);
 
         try {
-            // Pass the current file structure to the update flow
             const result: SuggestWebsiteUpdatesOutput = await suggestWebsiteUpdates({
-                currentFiles: files.map(f => ({ path: f.path, content: f.content })), // Map to the expected input type
+                currentFiles: files.map(f => ({ path: f.path, content: f.content })),
                 userFeedback,
             });
 
-             // Validate the result is an array of files
             if (!Array.isArray(result)) {
                 throw new Error('AI response was not in the expected format (array of files).');
             }
 
-            // Map the result back to FileNode[]
-             const updatedFilesResult: FileNode[] = result.map((file: UpdateFileSchema) => ({ // Use imported type
+             const updatedFilesResult: FileNode[] = result.map((file: UpdateFileSchema) => ({
                 path: file.path,
                 content: file.content,
-                type: 'file', // Assume all are files for now
+                type: 'file',
              }));
 
-
             setFiles(updatedFilesResult);
-            // Update preview starting with index.html or the first HTML file after update
             const initialHtmlPath = updatedFilesResult.find(f => f.path === 'index.html')?.path || updatedFilesResult.find(f => f.path.endsWith('.html'))?.path || 'index.html';
             updatePreview(updatedFilesResult, initialHtmlPath);
+            setUserFeedback('');
 
-            setUserFeedback(''); // Clear feedback input
-
-            // Reselect the currently selected file if it still exists
             const currentSelected = selectedFilePath;
             if (currentSelected && !updatedFilesResult.some(f => f.path === currentSelected)) {
-                // If the previously selected file is gone, select the first one
                  setSelectedFilePath(updatedFilesResult[0]?.path || null);
             } else if (!currentSelected && updatedFilesResult.length > 0) {
-                 // If nothing was selected before, select the first file
                  setSelectedFilePath(updatedFilesResult[0]?.path || null);
             }
-
             toast({ title: 'Website Updated', description: 'Changes applied based on feedback.' });
-
         } catch (err) {
             console.error('Error updating website:', err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
             setError(`Failed to update website. ${errorMessage}`);
-            // Don't clear files on update error, keep previous state
             toast({ variant: 'destructive', title: 'Update Failed', description: `Error: ${errorMessage}` });
         } finally {
             setIsLoading(false);
@@ -849,87 +762,63 @@ const WebGeniusApp: FC = () => {
       return;
     }
 
-    // Find the primary HTML file (index.html or first .html)
      const htmlFile = files.find(f => f.path === 'index.html') || files.find(f => f.path.endsWith('.html'));
     if (!htmlFile) {
         toast({ variant: 'destructive', title: 'Download Error', description: 'Could not find an HTML file to download.' });
         return;
     }
 
-    // Find CSS and JS files (prefer standard names)
-    const cssFile = files.find(f => f.path === 'style.css') || files.find(f => f.path.endsWith('.css'));
-    const jsFile = files.find(f => f.path === 'script.js') || files.find(f => f.path.endsWith('.js'));
-
-     // Helper function to create a relative path if files are in subdirectories
      const getRelativePath = (targetPath: string, basePath: string): string => {
-        // Basic implementation assuming simple structures
         const targetParts = targetPath.split('/');
         const baseParts = basePath.split('/');
-        baseParts.pop(); // Remove filename from base path
+        baseParts.pop(); 
 
         let commonPrefix = 0;
         while (commonPrefix < targetParts.length && commonPrefix < baseParts.length && targetParts[commonPrefix] === baseParts[commonPrefix]) {
             commonPrefix++;
         }
-
         const levelsUp = baseParts.length - commonPrefix;
         const remainingPath = targetParts.slice(commonPrefix).join('/');
-
         return (levelsUp > 0 ? '../'.repeat(levelsUp) : './') + remainingPath;
      }
 
-     // Build the final HTML content, linking to external files if they exist
-     const buildFinalHtml = (htmlNode: FileNode): string => {
+     const buildFinalHtml = (htmlNode: FileNode, allFiles: FileNode[]): string => {
         let content = htmlNode.content;
 
-        // Link CSS
-        const cssFileToLink = files.find(f => f.path.endsWith('.css'));
-        if (cssFileToLink) {
+        const cssFileToLink = allFiles.find(f => f.path.endsWith('.css'));
+        if (cssFileToLink && !content.includes(`<link rel="stylesheet" href="${getRelativePath(cssFileToLink.path, htmlNode.path)}">`)) {
             const cssPathRelative = getRelativePath(cssFileToLink.path, htmlNode.path);
             const linkTag = `<link rel="stylesheet" href="${cssPathRelative}">`;
             if (content.includes('</head>')) {
                 content = content.replace('</head>', `    ${linkTag}\n</head>`);
             } else {
-                content = `<head>\n    ${linkTag}\n</head>\n${content}`; // Add head if missing
+                content = `<head>\n    ${linkTag}\n</head>\n${content}`;
             }
         }
 
-        // Link JS
-        const jsFileToLink = files.find(f => f.path.endsWith('.js'));
-         if (jsFileToLink) {
+        const jsFileToLink = allFiles.find(f => f.path.endsWith('.js'));
+         if (jsFileToLink && !content.includes(`<script src="${getRelativePath(jsFileToLink.path, htmlNode.path)}"`)) {
             const jsPathRelative = getRelativePath(jsFileToLink.path, htmlNode.path);
-            const scriptTag = `<script src="${jsPathRelative}" defer></script>`; // Use defer for better performance
+            const scriptTag = `<script src="${jsPathRelative}" defer></script>`;
             if (content.includes('</body>')) {
                  content = content.replace('</body>', `    ${scriptTag}\n</body>`);
              } else {
-                 content = `${content}\n${scriptTag}`; // Append if body closing tag missing
+                 content = `${content}\n${scriptTag}`;
              }
          }
-
-        return `<!DOCTYPE html>\n<html lang="en">\n${content}\n</html>`;
+        if (!content.trim().toLowerCase().startsWith('<!doctype html>')) {
+            content = `<!DOCTYPE html>\n<html lang="en">\n${content}\n</html>`;
+        }
+        return content;
      };
 
-     // Create a zip file containing all generated files
      import('jszip').then(async JSZip => {
-         const zip = new JSZip.default(); // Use .default for commonjs/module interop
+         const zip = new JSZip.default();
 
          files.forEach(file => {
             let fileContent = file.content;
-            // If it's the main HTML file, build it with links
              if (file.path === htmlFile.path) {
-                 // We might not need to rebuild if AI already linked correctly
-                 // Check if links already exist, otherwise inject them
-                 let needsCssLink = files.some(f => f.path.endsWith('.css')) && !content.includes('<link rel="stylesheet"');
-                 let needsJsLink = files.some(f => f.path.endsWith('.js')) && !content.includes('<script src=');
-
-                 if (needsCssLink || needsJsLink) {
-                     fileContent = buildFinalHtml(file); // Rebuild with proper links if missing
-                 } else {
-                     // Basic ensure Doctype/html tags
-                     if (!fileContent.trim().startsWith('<!DOCTYPE html>')) {
-                        fileContent = `<!DOCTYPE html>\n<html lang="en">\n${fileContent}\n</html>`;
-                     }
-                 }
+                fileContent = buildFinalHtml(file, files);
              }
              zip.file(file.path, fileContent);
          });
@@ -942,13 +831,13 @@ const WebGeniusApp: FC = () => {
          link.click();
          document.body.removeChild(link);
          URL.revokeObjectURL(link.href);
-
          toast({ title: 'Website Downloaded', description: 'All files downloaded as website.zip.' });
+
      }).catch(err => {
          console.error("Failed to create zip file:", err);
          toast({ variant: 'destructive', title: 'Download Error', description: 'Failed to create zip file. Check console.' });
-         // Fallback to downloading just HTML if zipping fails
-         const fallbackBlob = new Blob([buildFinalHtml(htmlFile)], { type: 'text/html;charset=utf-8' });
+         const fallbackContent = buildFinalHtml(htmlFile, files);
+         const fallbackBlob = new Blob([fallbackContent], { type: 'text/html;charset=utf-8' });
          const fallbackLink = document.createElement('a');
          fallbackLink.href = URL.createObjectURL(fallbackBlob);
          fallbackLink.download = htmlFile.path;
@@ -958,12 +847,21 @@ const WebGeniusApp: FC = () => {
          URL.revokeObjectURL(fallbackLink.href);
          toast({ variant: 'default', title: 'Downloaded HTML Only', description: 'Could not zip files, downloaded main HTML.' });
      });
-
-
   }, [files, toast]);
 
 
   // --- Main Render ---
+  // Wait for isMobile to be determined before rendering the layout
+  if (typeof isMobile === 'undefined') {
+    return (
+        <div className="flex flex-col h-screen bg-muted/20 overflow-hidden items-center justify-center">
+            <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+    );
+  }
 
   return (
     <div className={cn(
@@ -979,7 +877,7 @@ const WebGeniusApp: FC = () => {
         </h1>
         <Button
           onClick={handleDownloadCode}
-          disabled={!files || isLoading} // Simpler disabled logic
+          disabled={!files || isLoading}
           variant="outline"
           size={isMobile ? "sm" : "default"}
         >
@@ -990,16 +888,14 @@ const WebGeniusApp: FC = () => {
 
       <div className="flex-grow flex flex-col min-h-0">
           {isMobile ? (
-             // --- Mobile View (Tabs) ---
              <Tabs value={activeMobileTab} onValueChange={setActiveMobileTab} className="flex flex-col flex-grow overflow-hidden border-none bg-transparent">
-                 {/* Content Panes */}
                  <TabsContent value="chat" className="flex-grow mt-0 overflow-auto" hidden={activeMobileTab !== 'chat'}>
                      <InputPanelContent
                         description={description}
                         setDescription={setDescription}
                         userFeedback={userFeedback}
                         setUserFeedback={setUserFeedback}
-                        hasGeneratedCode={!!files} // Pass boolean
+                        hasGeneratedCode={!!files}
                         isLoading={isLoading}
                         isGenerating={isGenerating}
                         isUpdating={isUpdating}
@@ -1022,11 +918,10 @@ const WebGeniusApp: FC = () => {
                         onSelectFile={handleSelectFile}
                         onFileContentChange={handleFileContentChange}
                         onRunCode={handleRunCode}
-                        previewPath={previewPath} // Pass previewPath
+                        previewPath={previewPath}
                      />
                  </TabsContent>
 
-                 {/* Bottom Navigation */}
                  <div className="shrink-0 border-t bg-background shadow-inner px-2 pt-1.5 pb-2">
                      <TabsList className="grid w-full grid-cols-2 h-11">
                          <TabsTrigger value="chat" className="h-full text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
@@ -1036,7 +931,7 @@ const WebGeniusApp: FC = () => {
                          <TabsTrigger
                              value="output"
                              className="h-full text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                             disabled={!isLoading && !error && !files} // Disabled if nothing generated/loading/error
+                             disabled={!isLoading && !error && !files}
                          >
                              <Eye className="w-4 h-4 mr-1.5" />
                              Output
@@ -1046,16 +941,14 @@ const WebGeniusApp: FC = () => {
              </Tabs>
 
           ) : (
-            // --- Desktop View (Resizable Panels) ---
             <ResizablePanelGroup direction="horizontal" className="flex-grow rounded-lg border shadow-md bg-background overflow-hidden min-h-0">
-              {/* Input Panel */}
               <ResizablePanel defaultSize={35} minSize={25} maxSize={50} className="min-h-0">
                  <InputPanelContent
                     description={description}
                     setDescription={setDescription}
                     userFeedback={userFeedback}
                     setUserFeedback={setUserFeedback}
-                    hasGeneratedCode={!!files} // Pass boolean
+                    hasGeneratedCode={!!files}
                     isLoading={isLoading}
                     isGenerating={isGenerating}
                     isUpdating={isUpdating}
@@ -1068,7 +961,6 @@ const WebGeniusApp: FC = () => {
 
               <ResizableHandle withHandle className="bg-border hover:bg-primary/50 active:bg-primary/60 focus-visible:ring-primary focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-none w-1.5 data-[resize-handle-state=drag]:bg-primary/50" />
 
-              {/* Output Panel */}
               <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
                  <OutputPanelContent
                     files={files}
@@ -1082,7 +974,7 @@ const WebGeniusApp: FC = () => {
                     onSelectFile={handleSelectFile}
                     onFileContentChange={handleFileContentChange}
                     onRunCode={handleRunCode}
-                    previewPath={previewPath} // Pass previewPath
+                    previewPath={previewPath}
                  />
               </ResizablePanel>
             </ResizablePanelGroup>
