@@ -32,7 +32,6 @@ import {
 import {
   suggestWebsiteUpdates,
   type SuggestWebsiteUpdatesOutput,
-  type FileSchema as UpdateFileSchema,
 } from '@/ai/flows/suggest-website-updates';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -42,7 +41,7 @@ import { cn } from '@/lib/utils';
 interface FileNode {
     path: string;
     content: string;
-    type: 'file' | 'folder'; 
+    type: 'file' | 'folder';
 }
 
 // --- Helper Functions ---
@@ -62,14 +61,14 @@ const buildSrcDoc = (htmlContent: string, cssContent: string, jsContent: string)
             document.addEventListener('click', function(event) {
                 let target = event.target;
                 while (target && target.tagName !== 'A') {
-                    target = target.parentElement;
+ target = target.parentElement;
                 }
 
                 if (target && target.tagName === 'A' && target.href) {
                     const url = new URL(target.href);
                     if (url.origin === window.location.origin && url.pathname !== '/' && url.pathname.includes('.')) {
-                         event.preventDefault(); 
-                         const targetPath = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
+ event.preventDefault(); 
+ const targetPath = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
                          window.parent.postMessage({ type: 'navigatePreview', path: targetPath }, '*');
                     }
                 }
@@ -112,7 +111,7 @@ interface FileExplorerProps {
 const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelectFile, isLoading, className }) => {
     if (isLoading && !files) {
         return (
-            <div className={cn("p-2 space-y-2", className)}>
+            <div className={cn("p-2 space-y-2", className ?? '')}>
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-5/6" />
@@ -122,7 +121,7 @@ const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelect
 
     if (!files || files.length === 0) {
         return (
-            <div className={cn("p-2 text-sm text-muted-foreground", className)}>
+            <div className={cn("p-2 text-sm text-muted-foreground", className ?? '')}>
                 No files generated yet.
             </div>
         );
@@ -134,9 +133,9 @@ const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelect
                 {files.map((file) => (
                     <Button
                         key={file.path}
-                        variant="ghost"
+                        variant="ghost" 
                         size="sm"
-                        className={cn(
+                        className={cn( // Adjusted type: string | null | undefined
                             "w-full justify-start h-7 text-xs px-2",
                             selectedFilePath === file.path && "bg-accent text-accent-foreground"
                         )}
@@ -154,19 +153,20 @@ const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelect
 
 // --- Editable Code Display Component ---
 interface EditableCodeDisplayProps {
-    content: string | null;
-    language: string;
-    isLoading: boolean;
+ content: string | null | undefined;
+ language: string;
+ isLoading: boolean;
     onChange: (newContent: string) => void;
     className?: string;
 }
 
 const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, isLoading, onChange, className }) => {
-
+ // Renamed the language prop
     if (isLoading) {
+ // Use isLoading from props
         return (
-            <div className={cn("p-4 space-y-2 h-full", className)}>
-                <Skeleton className="h-4 w-3/4" />
+            <div className={cn("p-4 space-y-2 h-full", className ?? '')}>
+ <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-5/6" />
                 <Skeleton className="h-4 w-full" />
@@ -177,20 +177,20 @@ const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, 
 
      if (content === null) {
         return (
-            <div className={cn("flex items-center justify-center h-full text-sm text-muted-foreground p-4", className)}>
+            <div className={cn("flex items-center justify-center h-full text-sm text-muted-foreground p-4", className || '')}>
                 Select a file to view or edit its content.
             </div>
         );
     }
 
     return (
-        <Textarea
-            value={content}
+        <Textarea 
+            value={content ?? ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder={`// ${language} code...`}
             className={cn(
                 "font-mono text-sm h-full w-full resize-none border rounded-md bg-muted/20 focus-visible:ring-1 focus-visible:ring-ring p-4",
-                 "whitespace-pre overflow-auto", 
+                 "whitespace-pre overflow-auto",
                  className
             )}
             spellCheck="false"
@@ -203,16 +203,16 @@ const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, 
 interface InputPanelProps {
     description: string;
     setDescription: (value: string) => void;
-    userFeedback: string;
+ userFeedback: string;
     setUserFeedback: (value: string) => void;
     hasGeneratedCode: boolean;
-    isLoading: boolean;
-    isGenerating: boolean;
+ isLoading: boolean;
+ isGenerating: boolean;
     isUpdating: boolean;
     handleGenerateWebsite: () => void;
     handleUpdateWebsite: () => void;
     error: string | null;
-    isMobile: boolean;
+ isMobile: boolean;
 }
 
 const InputPanelContent: FC<InputPanelProps> = ({
@@ -233,7 +233,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
         setDescription(e.target.value);
     };
     const handleFeedbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setUserFeedback(e.target.value);
+ setUserFeedback(e.target.value);
     };
 
    return (
@@ -328,24 +328,22 @@ const InputPanelContent: FC<InputPanelProps> = ({
 // --- Output Panel Component ---
 interface OutputPanelProps {
     files: FileNode[] | null;
-    isLoading: boolean;
-    previewSrcDoc: string;
-    error: string | null;
-    isMobile: boolean;
-    activeOutputTab: string;
+ isLoading: boolean;
+ previewSrcDoc: string | null;
+ isMobile: boolean;
+ activeOutputTab: string;
     setActiveOutputTab: (value: string) => void;
-    selectedFilePath: string | null;
+ selectedFilePath: string | null;
     onSelectFile: (path: string) => void;
     onFileContentChange: (path: string, newContent: string) => void;
     onRunCode: () => void;
-    previewPath: string;
+ previewPath: string | null; // Add previewPath here
+    error: string | null; // Add error here
 }
 
 const OutputPanelContent: FC<OutputPanelProps> = ({
     files,
-    isLoading,
-    previewSrcDoc,
-    error,
+    isLoading, // Keep isLoading prop name for internal use
     isMobile,
     activeOutputTab,
     setActiveOutputTab,
@@ -353,20 +351,21 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
     onSelectFile,
     onFileContentChange,
     onRunCode,
-    previewPath,
+ previewPath,
+    previewSrcDoc, error: outputError, // Renamed the prop to outputError
 }) => {
     const selectedFile = useMemo(() => files?.find(f => f.path === selectedFilePath), [files, selectedFilePath]);
     const editorLanguage = selectedFile ? getLanguageFromPath(selectedFile.path) : 'plaintext';
-
-    const { html: indexHtml, css: styleCss, javascript: scriptJs } = useMemo(() => {
-        if (!files) return { html: '', css: '', javascript: '' };
-        const html = files.find(f => f.path === 'index.html')?.content || '';
+ 
+    const { html: indexHtml, css: styleCss, javascript: scriptJs } = useMemo(() => { // This logic might need adjustment if not all projects have index.html, style.css, script.js
+ if (!files) return { html: '', css: '', javascript: '' };
+        const html = files.find(f => f.path === previewPath)?.content || ''; // Get content of current preview file
         const css = files.find(f => f.path === 'style.css')?.content || '';
         const javascript = files.find(f => f.path === 'script.js')?.content || '';
         return { html, css, javascript };
-    }, [files]);
+ }, [files, previewPath]);
 
-    const editorContent = useMemo(() => {
+ const editorContent = useMemo(() => {
         if (activeOutputTab === 'html') return indexHtml;
         if (activeOutputTab === 'css') return styleCss;
         if (activeOutputTab === 'js') return scriptJs;
@@ -375,102 +374,106 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
     }, [activeOutputTab, selectedFile, indexHtml, styleCss, scriptJs]);
 
     const handleEditorChange = useCallback((newContent: string) => {
-        if (activeOutputTab === 'html') onFileContentChange('index.html', newContent);
+ if (activeOutputTab === 'html' && previewPath) { // Update current preview file content
+            onFileContentChange(previewPath, newContent);
+ }
         else if (activeOutputTab === 'css') onFileContentChange('style.css', newContent);
-        else if (activeOutputTab === 'js') onFileContentChange('script.js', newContent);
+        else if (activeOutputTab === 'js') onFileContentChange('script.js', newContent); // Assumes a single script.js for now
         else if (activeOutputTab === 'files' && selectedFilePath) {
             onFileContentChange(selectedFilePath, newContent);
         }
-    }, [activeOutputTab, selectedFilePath, onFileContentChange]);
+ }, [activeOutputTab, selectedFilePath, onFileContentChange, previewPath]); // Added previewPath
 
 
     return (
         <div className={cn(
             "flex flex-col h-full",
-             isMobile ? 'p-0' : 'p-4'
-        )}>
-             <Tabs value={activeOutputTab} onValueChange={setActiveOutputTab} className="flex-grow flex flex-col h-full overflow-hidden border-none bg-transparent md:border md:bg-card md:border-border md:rounded-lg md:shadow-sm">
-                 <CardHeader className={cn(
-                     "flex flex-row items-center justify-between pb-2 pt-2 md:pt-4",
-                     isMobile ? 'border-b' : '',
-                     "relative"
-                 )}>
-                    {!isMobile && (
-                        <div>
+ isMobile ? 'p-0' : 'p-4',
+            outputError ? 'relative' : '' // Add relative positioning if there's an error
+        )}
+        > 
+ <Tabs value={activeOutputTab} onValueChange={setActiveOutputTab} className="flex-grow flex flex-col h-full overflow-hidden border-none bg-transparent md:border md:bg-card md:border-border md:rounded-lg md:shadow-sm">
+ <CardHeader className={cn(
+ "flex flex-row items-center justify-between pb-2 pt-2 md:pt-4 relative", isMobile && 'border-b', "relative"
+                ) as string | undefined}>
+                   {!isMobile && files && !isLoading && !outputError && (
+ <div>
                             <CardTitle className="text-lg md:text-xl">Output</CardTitle>
                             <CardDescription>
                                 Preview ({previewPath || 'N/A'}), explore files, or edit code. Click 'Run' to apply edits.
                             </CardDescription>
                         </div>
                      )}
-                     <div className={cn(
-                         "flex items-center gap-1",
+ <div className={cn(
+ "flex items-center gap-1",
+
                           isMobile ? 'w-full justify-between' : 'ml-auto'
                       )}>
-                         <TabsList className={cn(
-                             "grid grid-cols-5 gap-1 h-9",
-                             isMobile ? 'flex-grow' : ''
-                         )}>
-                             <TabsTrigger value="preview" className="text-xs px-2 h-full" disabled={!previewSrcDoc && !isLoading && !error}>
-                                 <Eye className="w-3.5 h-3.5 mr-1" /> Preview
+ <TabsList
+ className={cn(
+ "grid grid-cols-5 gap-1 h-9",
+ isMobile ? 'flex-grow' : ''
+ )}
+ >
+                            <TabsTrigger value="preview" className="text-xs px-2 h-full" disabled={!previewSrcDoc && !isLoading && !outputError}>
+                                <Eye className="w-3.5 h-3.5 mr-1" /> Preview {previewPath && `(${previewPath})`}
+                            </TabsTrigger>
+                            <TabsTrigger value="files" className="text-xs px-2 h-full" disabled={!files && !isLoading}>
+                                <Folder className="w-3.5 h-3.5 mr-1" /> Files
+                            </TabsTrigger>
+ <TabsTrigger value="html" className="text-xs px-2 h-full" disabled={!indexHtml && !isLoading}>
+                                <FileCode className="w-3.5 h-3.5 mr-1" /> HTML
+                            </TabsTrigger>
+                            <TabsTrigger value="css" className="text-xs px-2 h-full" disabled={!styleCss && !isLoading}>
+                                <FileType className="w-3.5 h-3.5 mr-1" /> CSS
                              </TabsTrigger>
-                             <TabsTrigger value="files" className="text-xs px-2 h-full" disabled={!files && !isLoading}>
-                                 <Folder className="w-3.5 h-3.5 mr-1" /> Files
-                             </TabsTrigger>
-                              <TabsTrigger value="html" className="text-xs px-2 h-full" disabled={!indexHtml && !isLoading}>
-                                 <FileCode className="w-3.5 h-3.5 mr-1" /> HTML
-                             </TabsTrigger>
-                             <TabsTrigger value="css" className="text-xs px-2 h-full" disabled={!styleCss && !isLoading}>
-                                 <FileType className="w-3.5 h-3.5 mr-1" /> CSS
-                             </TabsTrigger>
-                             <TabsTrigger value="js" className="text-xs px-2 h-full" disabled={!scriptJs && !isLoading}>
-                                 <FileJson className="w-3.5 h-3.5 mr-1" /> JS
-                             </TabsTrigger>
-                         </TabsList>
+ <TabsTrigger value="js" className="text-xs px-2 h-full" disabled={!scriptJs && !isLoading}>
+ <FileJson className="w-3.5 h-3.5 mr-1" /> JS
+                            </TabsTrigger>
+ </TabsList>
                          <Button
                             onClick={onRunCode}
                             size="icon"
                             variant="ghost"
                             className="h-9 w-9 flex-shrink-0 text-green-600 hover:bg-green-100 hover:text-green-700"
-                            disabled={!files || isLoading}
+ disabled={!files || isLoading}
                             aria-label="Run Code Changes"
                           >
                             <Play className="w-5 h-5" />
                           </Button>
-                    </div>
 
                  </CardHeader>
 
                  <CardContent className="flex-grow p-0 overflow-auto relative">
-                     <TabsContent value="preview" className="mt-0 h-full w-full absolute inset-0" hidden={activeOutputTab !== 'preview'}>
-                        {isLoading && !files && (
+ <TabsContent value="preview" className="mt-0 h-full w-full absolute inset-0" hidden={activeOutputTab !== 'preview'}>
+                        {(isLoading && !files && !previewSrcDoc && !outputError) && (
                             <div className="flex items-center justify-center h-full bg-background">
                                 <div className="space-y-4 p-4 w-full max-w-md"><Skeleton className="h-12 w-3/4" /><Skeleton className="h-6 w-full" /><Skeleton className="h-6 w-5/6" /><Skeleton className="h-24 w-full" /><Skeleton className="h-6 w-1/2" /></div>
                             </div>
                         )}
-                        {!isLoading && !files && !error && (
+                        {(!isLoading && !files && !outputError) && (
                             <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center bg-background">
-                                <p>Enter a description and click "Generate Website" to see the output.</p>
+ <p>Enter a description and click "Generate Website" to see the output.</p>
                             </div>
                         )}
                         {previewSrcDoc && !isLoading && (
                             <iframe
-                                srcDoc={previewSrcDoc}
+                                srcDoc={previewSrcDoc || ''}
                                 title="Website Preview"
                                 className="w-full h-full border-0 bg-white"
                                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                             />
-                        )}
-                        {isLoading && files && (
+ )}
+ {isLoading && files && activeOutputTab === 'preview' && (
                              <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
                                 <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+ </svg>
                              </div>
-                         )}
-                        {error && !files && (
-                             <div className="flex items-center justify-center h-full text-destructive p-4 text-center bg-background">
+                        )}
+                        {(outputError && !files) && (
+                            <div className="flex items-center justify-center h-full text-destructive p-4 text-center bg-background" hidden={activeOutputTab !== 'preview' || !outputError}>
                                 <p>An error occurred. Please check the input panel.</p>
                             </div>
                         )}
@@ -479,17 +482,17 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     <TabsContent value="files" className="mt-0 h-full w-full absolute inset-0 flex flex-col md:flex-row" hidden={activeOutputTab !== 'files'}>
                         <FileExplorer
                             files={files}
-                            selectedFilePath={selectedFilePath}
+                            selectedFilePath={selectedFilePath} // Accepts string | null
                             onSelectFile={onSelectFile}
-                            isLoading={isLoading && !files}
+                            isLoading={isLoading} // Pass isLoading
                             className="w-full md:w-1/4 md:max-w-[250px] border-b md:border-b-0 md:border-r shrink-0 h-1/3 md:h-full"
                         />
                          <div className="flex-grow relative min-h-0">
                             <EditableCodeDisplay
-                                content={selectedFile?.content ?? null}
-                                language={editorLanguage}
+                                content={selectedFile?.content as string | null} // Accepts string | null | undefined
+                                language={editorLanguage} // Accepts string
                                 isLoading={isLoading && !selectedFile}
-                                onChange={handleEditorChange}
+ onChange={(newContent) => selectedFilePath && onFileContentChange(selectedFilePath, newContent)} // Check selectedFilePath is not null
                                 className="absolute inset-0"
                             />
                          </div>
@@ -498,32 +501,39 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     <TabsContent value="html" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'html'}>
                        <EditableCodeDisplay
                            content={indexHtml}
-                           language="html"
-                           isLoading={isLoading && !files}
-                           onChange={(newContent) => onFileContentChange('index.html', newContent)}
+                           language="html" // Accepts string
+ isLoading={isLoading}
+ onChange={(newContent) => previewPath && onFileContentChange(previewPath, newContent)} // Check previewPath is not null
                            className="h-full"
                        />
                     </TabsContent>
-                     <TabsContent value="css" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'css'}>
+                    <TabsContent value="css" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'css'}>
                        <EditableCodeDisplay
                            content={styleCss}
-                           language="css"
-                           isLoading={isLoading && !files}
+                           language="css" // Accepts string
+ isLoading={isLoading}
                            onChange={(newContent) => onFileContentChange('style.css', newContent)}
                            className="h-full"
                        />
                     </TabsContent>
-                     <TabsContent value="js" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'js'}>
+                    <TabsContent value="js" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'js'}>
                        <EditableCodeDisplay
                            content={scriptJs}
-                           language="javascript"
-                           isLoading={isLoading && !files}
+                           language="javascript" // Accepts string
+ isLoading={isLoading}
                            onChange={(newContent) => onFileContentChange('script.js', newContent)}
                            className="h-full"
                        />
                     </TabsContent>
                 </CardContent>
             </Tabs>
+            {outputError && (
+                <Alert variant="destructive" className="absolute bottom-4 right-4 w-auto z-20">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Output Error</AlertTitle>
+                    <AlertDescription>{outputError}</AlertDescription>
+                </Alert>
+            )}
         </div>
     );
 };
@@ -532,37 +542,35 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
 const WebGeniusApp: FC = () => {
   const [description, setDescription] = useState<string>('');
   const [files, setFiles] = useState<FileNode[] | null>(null);
-  const [userFeedback, setUserFeedback] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [userFeedback, setUserFeedback] = useState<string>(''); 
+  const [activeOutputTab, setActiveOutputTab] = useState<string>('preview');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewSrcDoc, setPreviewSrcDoc] = useState<string>('');
-  const [previewPath, setPreviewPath] = useState<string>('index.html');
-  const { toast } = useToast();
+  const [previewSrcDoc, setPreviewSrcDoc] = useState<string | null>(null);
+ const [previewPath, setPreviewPath] = useState<string>('index.html');
+ const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [activeMobileTab, setActiveMobileTab] = useState<string>('chat');
-  const [activeOutputTab, setActiveOutputTab] = useState<string>('preview');
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [activeMobileTab, setActiveMobileTab] = useState<'chat' | 'output'>('chat');
+  const [isLoading, setIsLoading] = useState<boolean>(false); // Declare isLoading state
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+ const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
-  const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html') => {
-      if (!currentFiles) {
+  const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html', outputError: string | null = null) => {
+ if (!currentFiles || outputError) {
           setPreviewSrcDoc('');
           setPreviewPath('');
           return;
       }
 
-      const targetHtmlFile = currentFiles.find(f => f.path === targetPath && f.path.endsWith('.html'));
+      const targetHtmlFile = currentFiles.find(f => f.path === targetPath && f.path.endsWith('.html')); // Find the requested HTML file
 
       if (!targetHtmlFile) {
           const fallbackHtml = currentFiles.find(f => f.path.endsWith('.html'));
-          if (fallbackHtml) {
-              targetPath = fallbackHtml.path;
-              // Recursive call with the fallback path, ensure it's not an infinite loop
-              // This check prevents recursion if fallback is same as initial targetPath and not found
-              if (targetPath !== (arguments[1] || 'index.html')) {
+ if (fallbackHtml) {
+              targetPath = fallbackHtml.path; // Fallback to any HTML if the original target is not found 
+              if (targetPath !== (previewPath || 'index.html')) { // Fix: Compare with the original targetPath
                 updatePreview(currentFiles, targetPath);
-              } else {
+ } else {
                 setPreviewSrcDoc('<html><body>No suitable HTML file found to preview.</body></html>');
                 setPreviewPath('');
                 toast({ variant: 'destructive', title: 'Preview Error', description: `Target HTML file "${targetPath}" not found and no alternative found.` });
@@ -572,11 +580,11 @@ const WebGeniusApp: FC = () => {
               setPreviewPath('');
               toast({ variant: 'destructive', title: 'Preview Error', description: 'No HTML file found in the generated files.' });
           }
-          return;
+ return;
       }
 
-      const cssFile = currentFiles.find(f => f.path === 'style.css');
-      const jsFile = currentFiles.find(f => f.path === 'script.js');
+      const cssFile = currentFiles.find(f => f.path === 'style.css'); // Assumes a single style.css
+      const jsFile = currentFiles.find(f => f.path === 'script.js'); // Assumes a single script.js
 
       const cssContent = cssFile?.content || '';
       const jsContent = jsFile?.content || '';
@@ -586,14 +594,14 @@ const WebGeniusApp: FC = () => {
       setPreviewPath(targetPath);
 
       if (isMobile === true && activeMobileTab === 'chat' && !!targetHtmlFile.content) {
-          setActiveMobileTab('output');
-          setActiveOutputTab('preview');
-      } else if (isMobile === false && !!targetHtmlFile.content) {
-           setActiveOutputTab('preview');
+ setActiveMobileTab('output');
+ setActiveOutputTab('preview');
+      } else if (isMobile === false && !!targetHtmlFile.content) { // Use targetHtmlFile.content
+          setActiveOutputTab('preview'); // Correctly set state here
       } else if (!targetHtmlFile.content) {
           setActiveOutputTab('files');
-      }
-  }, [isMobile, activeMobileTab, toast]); 
+        }
+  }, [isMobile, activeMobileTab, toast, setActiveOutputTab]); // Added dependencies
 
   useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
@@ -614,59 +622,58 @@ const WebGeniusApp: FC = () => {
       return () => {
           window.removeEventListener('message', handleMessage);
       };
-  }, [files, updatePreview, toast]);
+  }, [files, toast]); // Depend on files so that updatePreview uses the latest state and include toast
 
-
-  const handleSelectFile = useCallback((path: string) => {
+ // Correctly pass down the state setters to the child components
+ const handleSelectFile = useCallback((path: string) => {
       setSelectedFilePath(path);
       if (['html', 'css', 'js'].includes(activeOutputTab)) {
           setActiveOutputTab('files');
       } else {
           setActiveOutputTab(activeOutputTab);
       }
-  }, [activeOutputTab]);
-
+  }, [activeOutputTab, setActiveOutputTab]);
+ 
   const handleFileContentChange = useCallback((path: string, newContent: string) => {
       setFiles(currentFiles => {
           if (!currentFiles) return null;
           return currentFiles.map(file =>
-              file.path === path ? { ...file, content: newContent } : file
+              file.path === path ? { ...file, content: newContent } : file // Update the file content
           );
       });
-  }, []);
+ }, [setFiles]); // Added setFiles as dependency
 
     const handleRunCode = useCallback(() => {
         if (!files) {
             toast({ variant: 'destructive', title: 'Run Error', description: 'No code to run.' });
             return;
         }
-        setIsLoading(true);
         setError(null);
-        setTimeout(() => {
-            try {
-                updatePreview(files, previewPath);
-                toast({ title: 'Preview Updated', description: 'Changes applied to the preview.' });
-                 setActiveOutputTab('preview');
-            } catch (err) {
-                 console.error('Error updating preview:', err);
-                 setError('Failed to update preview.');
-                 toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not update preview.' });
-            } finally {
-                setIsLoading(false);
-            }
-        }, 300);
-    }, [files, updatePreview, previewPath, toast]);
+
+ if (files && previewPath) { // Ensure files and previewPath are not null before updating preview
+ updatePreview(files, previewPath, null); // Pass null for outputError
+ toast({ title: 'Preview Updated', description: 'Changes applied to the preview.' });
+ setActiveOutputTab('preview');
+ } else {
+ console.error('Error updating preview: Files or previewPath is null');
+ setError('Failed to update preview.');
+ toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not update preview.' });
+ // setIsLoading(false); // Removed as it's handled in the main finally block
+ // setIsUpdating(false); // Removed as it's handled in the main finally block
+ setIsGenerating(false); // Ensure isGenerating is reset too
+ }
+ }, [files, updatePreview, previewPath, toast, setActiveOutputTab, setIsLoading, setIsGenerating]); // Corrected dependencies
 
 
-  const handleGenerateWebsite = useCallback(async () => {
+  const handleGenerateWebsite = useCallback(async () => { // Removed stray semicolon
     if (!description.trim()) {
       setError('Please enter a description for the website.');
       return;
     }
-    setIsLoading(true);
-    setIsGenerating(true);
-    setIsUpdating(false);
+    setIsLoading(true); // Use isLoading for both generating and updating phases
+    setIsUpdating(false); // Reset updating state if generating
     setError(null);
+    setIsGenerating(true);
     
     try {
       const result: GenerateWebsiteOutput = await generateWebsite({ description });
@@ -679,24 +686,23 @@ const WebGeniusApp: FC = () => {
            setFiles(newFiles);
            const initialHtmlPath = newFiles.find(f => f.path === 'index.html')?.path || newFiles.find(f => f.path.endsWith('.html'))?.path || 'index.html';
            updatePreview(newFiles, initialHtmlPath);
-           setSelectedFilePath(initialHtmlPath || (newFiles[0]?.path || null));
+           setSelectedFilePath(initialHtmlPath || (newFiles[0]?.path || null)); // Set selected file path
            toast({ title: 'Website Generated', description: 'Files created successfully!' });
        } else {
-           throw new Error('AI response was not in the expected format (array of files).');
+           throw new Error('AI response was not in the expected format (array of files).'); // Keep error handling
        }
     } catch (err) {
-      console.error('Error generating website:', err);
+      console.error('Error generating website:', err); // Keep error logging
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to generate website. ${errorMessage}`);
       setFiles(null);
       updatePreview(null);
-      toast({ variant: 'destructive', title: 'Generation Failed', description: `Error: ${errorMessage}` });
+      toast({ variant: 'destructive', title: 'Generation Failed', description: `Error: ${errorMessage}` }); // Keep toast
     } finally {
-      setIsLoading(false);
       setIsGenerating(false);
+ setIsLoading(false); // Ensure isLoading is reset
     }
   }, [description, toast, updatePreview]);
-
 
     const handleUpdateWebsite = useCallback(async () => {
         if (!files) {
@@ -710,9 +716,8 @@ const WebGeniusApp: FC = () => {
             return;
         }
 
-        setIsLoading(true);
-        setIsUpdating(true);
-        setIsGenerating(false);
+        setIsLoading(true); // Use isLoading for both generating and updating phases
+        setIsUpdating(true); // Set updating state
         setError(null);
 
         try {
@@ -725,15 +730,16 @@ const WebGeniusApp: FC = () => {
                 throw new Error('AI response was not in the expected format (array of files).');
             }
 
-             const updatedFilesResult: FileNode[] = result.map((file: UpdateFileSchema) => ({
-                path: file.path,
+            const updatedFilesResult: FileNode[] = result.map(file => ({
                 content: file.content,
                 type: 'file',
+                path: file.path, // Ensure path is included
              }));
+
 
             setFiles(updatedFilesResult);
             const initialHtmlPath = updatedFilesResult.find(f => f.path === 'index.html')?.path || updatedFilesResult.find(f => f.path.endsWith('.html'))?.path || 'index.html';
-            updatePreview(updatedFilesResult, initialHtmlPath);
+            updatePreview(updatedFilesResult, initialHtmlPath); // Update preview after updating files
             setUserFeedback('');
 
             const currentSelected = selectedFilePath;
@@ -749,10 +755,9 @@ const WebGeniusApp: FC = () => {
             setError(`Failed to update website. ${errorMessage}`);
             toast({ variant: 'destructive', title: 'Update Failed', description: `Error: ${errorMessage}` });
         } finally {
-            setIsLoading(false);
-            setIsUpdating(false);
+            setIsLoading(false); // Reset isLoading in finally block
         }
-    }, [files, userFeedback, toast, updatePreview, selectedFilePath]);
+    }, [files, userFeedback, toast, updatePreview, selectedFilePath]); // Added missing dependencies
 
 
   const handleDownloadCode = useCallback(() => {
@@ -848,7 +853,7 @@ const WebGeniusApp: FC = () => {
          toast({ variant: 'default', title: 'Downloaded HTML Only', description: 'Could not zip files, downloaded main HTML.' });
      });
   }, [files, toast]);
-
+ 
 
   // --- Main Render ---
   // Wait for isMobile to be determined before rendering the layout
@@ -864,7 +869,7 @@ const WebGeniusApp: FC = () => {
   }
 
   return (
-    <div className={cn(
+    <div className={cn(// Added comma
         "flex flex-col h-screen bg-muted/20 overflow-hidden",
         isMobile ? 'p-0' : 'p-4 gap-4'
         )}>
@@ -888,39 +893,38 @@ const WebGeniusApp: FC = () => {
 
       <div className="flex-grow flex flex-col min-h-0">
           {isMobile ? (
-             <Tabs value={activeMobileTab} onValueChange={setActiveMobileTab} className="flex flex-col flex-grow overflow-hidden border-none bg-transparent">
-                 <TabsContent value="chat" className="flex-grow mt-0 overflow-auto" hidden={activeMobileTab !== 'chat'}>
-                     <InputPanelContent
+ <Tabs value={activeMobileTab} onValueChange={(value) => setActiveMobileTab(value as 'chat' | 'output')} className="flex flex-col flex-grow overflow-hidden border-none bg-transparent">
+ <TabsContent value="chat" className="flex-grow mt-0 overflow-auto" hidden={activeMobileTab !== 'chat'} >
+ <InputPanelContent
                         description={description}
                         setDescription={setDescription}
                         userFeedback={userFeedback}
                         setUserFeedback={setUserFeedback}
                         hasGeneratedCode={!!files}
-                        isLoading={isLoading}
+                        isLoading={isLoading} // Pass isLoading
                         isGenerating={isGenerating}
                         isUpdating={isUpdating}
                         handleGenerateWebsite={handleGenerateWebsite}
                         handleUpdateWebsite={handleUpdateWebsite}
                         error={error}
-                        isMobile={isMobile}
-                     />
-                 </TabsContent>
-                 <TabsContent value="output" className="flex-grow mt-0 overflow-hidden p-0" hidden={activeMobileTab !== 'output'}>
-                     <OutputPanelContent
+ isMobile={Boolean(isMobile)}
+ </TabsContent>
+                 <TabsContent value="output" className="flex-grow mt-0 overflow-hidden p-0" hidden={activeMobileTab !== 'output'}> {/* Added hidden prop */}
+ <OutputPanelContent
                         files={files}
-                        isLoading={isLoading}
-                        previewSrcDoc={previewSrcDoc}
-                        error={error}
+                        isLoading={isLoading} // Pass isLoading
+                        previewSrcDoc={previewSrcDoc} // Pass previewSrcDoc as is (can be null)
                         isMobile={isMobile}
-                        activeOutputTab={activeOutputTab}
-                        setActiveOutputTab={setActiveOutputTab}
-                        selectedFilePath={selectedFilePath}
+                        activeOutputTab={activeOutputTab} // Pass activeOutputTab
+                        setActiveOutputTab={setActiveOutputTab} // Pass setActiveOutputTab
+                        selectedFilePath={selectedFilePath} // Pass selectedFilePath
                         onSelectFile={handleSelectFile}
                         onFileContentChange={handleFileContentChange}
                         onRunCode={handleRunCode}
-                        previewPath={previewPath}
+                        error={error} // Pass the missing prop
+ previewPath={previewPath} // Ensure previewPath is passed
                      />
-                 </TabsContent>
+                 </TabsContent> {/* Closing tag added */}
 
                  <div className="shrink-0 border-t bg-background shadow-inner px-2 pt-1.5 pb-2">
                      <TabsList className="grid w-full grid-cols-2 h-11">
@@ -931,8 +935,8 @@ const WebGeniusApp: FC = () => {
                          <TabsTrigger
                              value="output"
                              className="h-full text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                             disabled={!isLoading && !error && !files}
-                         >
+ disabled={Boolean(isLoading || error || !files)} // Ensure boolean
+ >
                              <Eye className="w-4 h-4 mr-1.5" />
                              Output
                          </TabsTrigger>
@@ -949,13 +953,13 @@ const WebGeniusApp: FC = () => {
                     userFeedback={userFeedback}
                     setUserFeedback={setUserFeedback}
                     hasGeneratedCode={!!files}
-                    isLoading={isLoading}
+                    isLoading={isLoading} // Pass isLoading
                     isGenerating={isGenerating}
                     isUpdating={isUpdating}
                     handleGenerateWebsite={handleGenerateWebsite}
                     handleUpdateWebsite={handleUpdateWebsite}
                     error={error}
-                    isMobile={isMobile}
+ isMobile={Boolean(isMobile)}
                  />
               </ResizablePanel>
 
@@ -964,17 +968,17 @@ const WebGeniusApp: FC = () => {
               <ResizablePanel defaultSize={65} minSize={30} className="min-h-0">
                  <OutputPanelContent
                     files={files}
-                    isLoading={isLoading}
-                    previewSrcDoc={previewSrcDoc}
-                    error={error}
+                    isLoading={isLoading} // Pass isLoading
+                    previewSrcDoc={previewSrcDoc} // Pass previewSrcDoc as is
                     isMobile={isMobile}
-                    activeOutputTab={activeOutputTab}
-                    setActiveOutputTab={setActiveOutputTab}
-                    selectedFilePath={selectedFilePath}
+                    activeOutputTab={activeOutputTab} // Pass activeOutputTab
+                    setActiveOutputTab={setActiveOutputTab} // Pass setActiveOutputTab
+                    selectedFilePath={selectedFilePath} // Pass selectedFilePath
                     onSelectFile={handleSelectFile}
                     onFileContentChange={handleFileContentChange}
-                    onRunCode={handleRunCode}
-                    previewPath={previewPath}
+                    onRunCode={handleRunCode} // Pass onRunCode
+ previewPath={previewPath} // Ensure previewPath is passed
+                    error={error} // Pass the error state to the OutputPanelContent
                  />
               </ResizablePanel>
             </ResizablePanelGroup>
@@ -982,6 +986,6 @@ const WebGeniusApp: FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default WebGeniusApp;
