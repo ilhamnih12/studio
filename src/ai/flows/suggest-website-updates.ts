@@ -17,7 +17,7 @@ import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
 
 // Define a schema for a single file (reusable)
-export const FileSchema = z.object({
+const FileSchema = z.object({
     path: z.string().describe('The full path of the file (e.g., index.html, css/style.css)'),
     content: z.string().describe('The content of the file.'),
 });

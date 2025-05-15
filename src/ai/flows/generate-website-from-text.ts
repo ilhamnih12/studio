@@ -43,12 +43,23 @@ const prompt = ai.definePrompt({
 
   Description: {{{description}}}
 
-  Structure the output as an array of file objects. Each object should have a 'path' (e.g., "index.html", "style.css", "script.js") and 'content' (the code for that file).
-  - Create standard file names: index.html, style.css, script.js.
-  - If CSS or JS is simple, you can include it directly in the HTML file using <style> or <script> tags, but prefer separate files for better organization if the code is more complex. If you use separate files, ensure the HTML file includes the correct <link> tag for the CSS and <script> tag for the JavaScript.
-  - Provide complete code for each file. Do not include explanations or comments outside the code itself.
-  - Return only the JSON array of file objects.
-  `,
+  Structure the output as an array of file objects. Each object should have a 'path' and 'content'.
+  Requirements:
+  - Create following files: index.html, info.html, style.css, script.js
+  - index.html should have a link/button to info.html
+  - info.html should have a link/button back to index.html
+  - All pages should share the same style.css
+  - Use proper relative paths in href attributes (e.g., "info.html", not "/info.html")
+  - If CSS or JS is complex, use separate files and include proper <link> and <script> tags
+  - Return only the JSON array of file objects with complete code for each file
+
+  Example file structure:
+  [
+    { "path": "index.html", "content": "..." },
+    { "path": "info.html", "content": "..." },
+    { "path": "style.css", "content": "..." },
+    { "path": "script.js", "content": "..." }
+  ]`,
 });
 
 const generateWebsiteFlow = ai.defineFlow<
