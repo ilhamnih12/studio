@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const result = await generateWebsite(body);
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('Generate website error:', error);
+    console.error('Generate website error details:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

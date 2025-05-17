@@ -52,26 +52,9 @@ function getLanguageFromPath(path: string): string {
 }
 
 const buildSrcDoc = (htmlContent: string, cssContent: string, jsContent: string): string => {
-    const navigationScript = `
-        <script>
-            document.addEventListener('click', function(event) {
-                let target = event.target;
-                while (target && target.tagName !== 'A') {
-                    target = target.parentElement;
-                }
+    // Commented out the navigation script to test button interactivity
 
-                if (target && target.tagName === 'A' && target.href) {
-                    const url = new URL(target.href);
-                    if (url.origin === window.location.origin) {
-                        event.preventDefault();
-                        const targetPath = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
-                        window.parent.postMessage({ type: 'navigatePreview', path: targetPath || 'index.html' }, '*');
-                    }
-                }
-            });
-        </script>
-    `;
-
+    console.log('JavaScript content for srcDoc:', jsContent);
     return `
         <!DOCTYPE html>
         <html lang="en">
@@ -87,12 +70,20 @@ const buildSrcDoc = (htmlContent: string, cssContent: string, jsContent: string)
         </head>
         <body>
             ${htmlContent}
-            <script>${jsContent}</script>
-            ${navigationScript}
+            <script>
+                window.onerror = function(message, source, lineno, colno, error) {
+                    console.error("Error in iframe script:", message, source, lineno, colno, error);
+                };
+                try {
+ console.log("Script started from iframe");
+ ${jsContent}
+ } catch (error) { console.error("Error executing iframe script:", error); }
+ </script>
+            console.log("Script finished from iframe");
         </body>
         </html>
     `;
-};
+}; // Fix: Added missing semicolon
 
 
 // --- File Explorer Component ---
@@ -118,7 +109,7 @@ const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelect
     if (!files || files.length === 0) {
         return (
             <div className={cn("p-2 text-sm text-muted-foreground", className ?? '')}>
-                No files generated yet.
+                Belum ada file yang dibuat.
             </div>
         );
     }
@@ -174,14 +165,14 @@ const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, 
      if (content === null) {
         return (
             <div className={cn("flex items-center justify-center h-full text-sm text-muted-foreground p-4", className || '')}>
-                Select a file to view or edit its content.
+                Pilih file buat lihat atau edit isinya.
             </div>
         );
     }
 
     return (
         <Textarea 
-            value={content ?? ''}
+            value={content || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder={`// ${language} code...`}
             className={cn(
@@ -239,9 +230,9 @@ const InputPanelContent: FC<InputPanelProps> = ({
     )}>
         <Card className="flex flex-col flex-grow shadow-sm border-none bg-transparent md:border md:bg-card md:border-border">
             <CardHeader className="pt-2 pb-2 md:pt-6 md:pb-6">
-                <CardTitle className="text-lg md:text-xl">Describe Your Website</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Jelaskan Website-mu</CardTitle>
                 <CardDescription>
-                    Enter a description or request updates for the generated site.
+                    Masukkan deskripsi atau minta update buat website yang sudah dibuat.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col space-y-4 pt-0 pb-2 md:pb-6">
@@ -249,7 +240,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
                     <Label htmlFor="description" className="mb-2">Description</Label>
                     <Textarea
                         id="description"
-                        placeholder="e.g., A landing page for a coffee shop..."
+                        placeholder="Contoh: Landing page buat kedai kopi..."
                         value={description}
                         onChange={handleDescriptionChange}
                         className="flex-grow min-h-[150px] resize-none text-sm"
@@ -258,11 +249,11 @@ const InputPanelContent: FC<InputPanelProps> = ({
                 </div>
                 {hasGeneratedCode && (
                     <div className="pt-4 border-t space-y-2">
-                        <Label htmlFor="feedback">Request Updates (Optional)</Label>
+                        <Label htmlFor="feedback">Minta Update (Opsional)</Label>
                         <div className="flex gap-2 items-center">
                             <Input
                                 id="feedback"
-                                placeholder="e.g., Change the background to light blue"
+                                placeholder="Contoh: Ganti background jadi biru muda"
                                 value={userFeedback}
                                 onChange={handleFeedbackChange}
                                 disabled={isLoading}
@@ -279,7 +270,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
                                 disabled={isLoading || !userFeedback.trim()}
                                 size="icon"
                                 variant="ghost"
-                                aria-label="Send Feedback"
+                                aria-label="Kirim Feedback"
                                 className="h-10 w-10 flex-shrink-0"
                             >
                                 <Send className="h-5 w-5" />
@@ -299,17 +290,16 @@ const InputPanelContent: FC<InputPanelProps> = ({
                     ) : isUpdating ? (
                         <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating...</>
                     ) : (
-                        hasGeneratedCode ? 'Generate / Regenerate' : 'Generate Website'
+                        hasGeneratedCode ? 'Buat / Buat Lagi' : 'Buat Website'
                     )}
                 </Button>
                  {hasGeneratedCode && !isLoading && (
                     <p className="text-xs text-muted-foreground text-center mt-1">
-                        Modifying the description and clicking again will regenerate the entire site.
+                        Ubah deskripsi dan klik lagi buat buat ulang seluruh website.
                     </p>
                  )}
             </CardFooter>
         </Card>
-
         {error && (
             <Alert variant="destructive" className="mt-auto">
                 <Terminal className="h-4 w-4" />
@@ -394,9 +384,9 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     {!isMobile && files && !isLoading && !outputError && (
                         <div>
                             <CardTitle className="text-lg md:text-xl">Output</CardTitle>
-                            <CardDescription>
-                                Preview ({previewPath || 'N/A'}), explore files, or edit code. Click 'Run' to apply edits.
-                            </CardDescription>
+                                                        <CardDescription>
+                                Preview ({previewPath || 'N/A'}), lihat file, atau edit kode. Klik 'Jalankan' buat terapkan perubahan.
+                                                        </CardDescription>
                         </div>
                     )}
                     <div className={cn(
@@ -409,23 +399,23 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                                 isMobile ? 'flex-grow' : ''
                             )}
                         >
-                            <TabsTrigger value="preview" className="text-xs px-2 h-full" disabled={!previewSrcDoc && !isLoading && !outputError}>
+                            <TabsTrigger value="preview" className="text-xs px-2 h-full" disabled={!files && !isLoading && !outputError}>
                                 <Eye className="w-3.5 h-3.5 mr-1" /> Preview {previewPath && `(${previewPath})`}
                             </TabsTrigger>
-                            <TabsTrigger value="files" className="text-xs px-2 h-full" disabled={!files && !isLoading}>
+                            <TabsTrigger value="files" className="text-xs px-2 h-full" disabled={(!files || files.length === 0) && !isLoading}>
                                 <Folder className="w-3.5 h-3.5 mr-1" /> Files
                             </TabsTrigger>
-                            <TabsTrigger value="html" className="text-xs px-2 h-full" disabled={!indexHtml && !isLoading}>
+                            <TabsTrigger value="html" className="text-xs px-2 h-full" disabled={(!files || !indexHtml) && !isLoading}>
                                 <FileCode className="w-3.5 h-3.5 mr-1" /> HTML
                             </TabsTrigger>
-                            <TabsTrigger value="css" className="text-xs px-2 h-full" disabled={!styleCss && !isLoading}>
+                            <TabsTrigger value="css" className="text-xs px-2 h-full" disabled={(!files || !styleCss) && !isLoading}>
                                 <FileType className="w-3.5 h-3.5 mr-1" /> CSS
                             </TabsTrigger>
-                            <TabsTrigger value="js" className="text-xs px-2 h-full" disabled={!scriptJs && !isLoading}>
+                            <TabsTrigger value="js" className="text-xs px-2 h-full" disabled={(!files || !scriptJs) && !isLoading}>
                                 <FileJson className="w-3.5 h-3.5 mr-1" /> JS
                             </TabsTrigger>
                         </TabsList>
-                        <Button
+                                                <Button
                             onClick={onRunCode}
                             size="icon"
                             variant="ghost"
@@ -433,7 +423,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                             disabled={!files || isLoading}
                             aria-label="Run Code Changes"
                         >
-                            <Play className="w-5 h-5" />
+                                                        <Play className="w-5 h-5" /> Jalankan
                         </Button>
                     </div>
                 </CardHeader>
@@ -447,15 +437,23 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                         )}
                         {(!isLoading && !files && !outputError) && (
                             <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center bg-background">
-                                <p>Enter a description and click "Generate Website" to see the output.</p>
+                                <p>Masukkan deskripsi dan klik "Buat Website" buat lihat hasilnya.</p>
                             </div>
                         )}
                         {previewSrcDoc && !isLoading && (
                             <iframe
-                                srcDoc={previewSrcDoc || ''}
+                                srcDoc={previewSrcDoc || '<html><body style="background-color: white;"></body></html>'}
                                 title="Website Preview"
                                 className="w-full h-full border-0 bg-white"
-                                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                                onLoad={() => console.log("iframe loaded")}
+                            />
+                        )}
+ {
+ // If not loading, no files, but there is a previewSrcDoc (shouldn't happen with current logic)
+ // Or if there's an outputError
+ (!isLoading && !files && previewSrcDoc && activeOutputTab === 'preview' && !outputError) && (
+                            <div className="flex items-center justify-center h-full bg-white p-4">
+ <Alert className="w-full max-w-sm text-center" variant="default"><AlertTitle>Preview Gak Tersedia</AlertTitle><AlertDescription>Preview lagi ditutup, silakan klik download dan jalanin lokal ya.</AlertDescription></Alert>
                             />
                         )}
                         {isLoading && files && activeOutputTab === 'preview' && (
@@ -468,7 +466,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                         )}
                         {(outputError && !files) && (
                             <div className="flex items-center justify-center h-full text-destructive p-4 text-center bg-background" hidden={activeOutputTab !== 'preview' || !outputError}>
-                                <p>An error occurred. Please check the input panel.</p>
+                                <p>Ada error. Cek panel input ya.</p>
                             </div>
                         )}
                     </TabsContent>
@@ -524,7 +522,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
             {outputError && (
                 <Alert variant="destructive" className="absolute bottom-4 right-4 w-auto z-20">
                     <Terminal className="h-4 w-4" />
-                    <AlertTitle>Output Error</AlertTitle>
+                    <AlertTitle>Error Output</AlertTitle>
                     <AlertDescription>{outputError}</AlertDescription>
                 </Alert>
             )}
@@ -550,6 +548,7 @@ const WebGeniusApp: FC = () => {
  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
   const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html', outputError: string | null = null) => {
+ console.log("Calling updatePreview", currentFiles, targetPath);
  if (!currentFiles || outputError) {
           setPreviewSrcDoc('');
           setPreviewPath('');
@@ -583,6 +582,7 @@ const WebGeniusApp: FC = () => {
       const cssContent = cssFile?.content || '';
       const jsContent = jsFile?.content || '';
 
+ // console.log('Building srcDoc with:', { htmlContent: targetHtmlFile?.content, cssContent, jsContent }); // Keep this for internal buildSrcDoc logging
       const srcDoc = buildSrcDoc(targetHtmlFile.content, cssContent, jsContent);
       setPreviewSrcDoc(srcDoc);
       setPreviewPath(targetPath);
@@ -590,6 +590,7 @@ const WebGeniusApp: FC = () => {
       if (isMobile === true && activeMobileTab === 'chat' && !!targetHtmlFile.content) {
  setActiveMobileTab('output');
  setActiveOutputTab('preview');
+ console.log('Generated srcDoc:', srcDoc);
       } else if (isMobile === false && !!targetHtmlFile.content) { // Use targetHtmlFile.content
           setActiveOutputTab('preview'); // Correctly set state here
       } else if (!targetHtmlFile.content) {
@@ -640,7 +641,7 @@ const WebGeniusApp: FC = () => {
     const handleRunCode = useCallback(() => {
         if (!files) {
             toast({ variant: 'destructive', title: 'Run Error', description: 'No code to run.' });
-            return;
+ return;
         }
         setError(null);
 
@@ -649,7 +650,7 @@ const WebGeniusApp: FC = () => {
  toast({ title: 'Preview Updated', description: 'Changes applied to the preview.' });
  setActiveOutputTab('preview');
  } else {
- console.error('Error updating preview: Files or previewPath is null');
+ console.error('Error updating preview: files or previewPath is null');
  setError('Failed to update preview.');
  toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not update preview.' });
  // setIsLoading(false); // Removed as it's handled in the main finally block
@@ -661,7 +662,7 @@ const WebGeniusApp: FC = () => {
 
   const handleGenerateWebsite = useCallback(async () => {
     if (!description.trim()) {
-      setError('Please enter a description for the website.');
+      setError('Masukkan deskripsi buat websitenya ya.');
       return;
     }
     setIsLoading(true);
@@ -684,6 +685,7 @@ const WebGeniusApp: FC = () => {
       
       const result = await response.json();
       if (Array.isArray(result)) {
+ console.log('Generated files:', result);
         const newFiles: FileNode[] = result.map(file => ({
           path: file.path,
           content: file.content,
@@ -702,7 +704,7 @@ const WebGeniusApp: FC = () => {
     } catch (err) {
       console.error('Error generating website:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Failed to generate website. ${errorMessage}`);
+      setError(`Gagal buat website. ${errorMessage}`);
       setFiles(null);
       updatePreview(null);
       toast({ 
@@ -719,13 +721,13 @@ const WebGeniusApp: FC = () => {
 const handleUpdateWebsite = useCallback(async () => {
     if (!files) {
       setError('Generate a website first.');
-      toast({ variant: 'destructive', title: 'Update Error', description: 'Generate a website first.' });
+      toast({ variant: 'destructive', title: 'Error Update', description: 'Buat website dulu ya.' });
       return;
     }
     if (!userFeedback.trim()) {
       setError('Please provide feedback.');
-      toast({ variant: 'destructive', title: 'Update Error', description: 'Enter your update request.' });
-      return;
+      toast({ variant: 'destructive', title: 'Error Update', description: 'Masukkan permintaan updatemu.' });
+ return;
     }
     setIsLoading(true);
     setIsUpdating(true);
@@ -768,7 +770,7 @@ const handleUpdateWebsite = useCallback(async () => {
     } catch (err) {
       console.error('Error updating website:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Failed to update website. ${errorMessage}`);
+      setError(`Gagal update website. ${errorMessage}`);
       toast({ variant: 'destructive', title: 'Update Failed', description: `Error: ${errorMessage}` });
     } finally {
       setIsLoading(false);
@@ -778,13 +780,13 @@ const handleUpdateWebsite = useCallback(async () => {
   const handleDownloadCode = useCallback(() => {
     if (!files || files.length === 0) {
       setError('No website code to download.');
-      toast({ variant: 'destructive', title: 'Download Error', description: 'Generate a website first.' });
+      toast({ variant: 'destructive', title: 'Error Unduh', description: 'Buat website dulu ya.' });
       return;
     }
 
      const htmlFile = files.find(f => f.path === 'index.html') || files.find(f => f.path.endsWith('.html'));
     if (!htmlFile) {
-        toast({ variant: 'destructive', title: 'Download Error', description: 'Could not find an HTML file to download.' });
+        toast({ variant: 'destructive', title: 'Error Unduh', description: 'Gak bisa nemuin file HTML buat diunduh.' });
         return;
     }
 
@@ -852,7 +854,7 @@ const handleUpdateWebsite = useCallback(async () => {
          document.body.removeChild(link);
          URL.revokeObjectURL(link.href);
          toast({ title: 'Website Downloaded', description: 'All files downloaded as website.zip.' });
-
+ 
      }).catch(err => {
          console.error("Failed to create zip file:", err);
          toast({ variant: 'destructive', title: 'Download Error', description: 'Failed to create zip file. Check console.' });
@@ -866,7 +868,7 @@ const handleUpdateWebsite = useCallback(async () => {
          document.body.removeChild(fallbackLink);
          URL.revokeObjectURL(fallbackLink.href);
          toast({ variant: 'default', title: 'Downloaded HTML Only', description: 'Could not zip files, downloaded main HTML.' });
-     });
+     }); // Corrected closing parenthesis for .catch
   }, [files, toast]);
  
 
@@ -885,15 +887,18 @@ const handleUpdateWebsite = useCallback(async () => {
 
   return (
     <div className={cn(// Added comma
-        "flex flex-col h-screen bg-muted/20 overflow-hidden",
-        isMobile ? 'p-0' : 'p-4 gap-4'
-        )}>
+      "flex flex-col h-screen bg-muted/20 overflow-hidden",
+      isMobile ? 'p-0' : 'p-4'
+    )}>
        <header className={cn(
            "flex justify-between items-center shrink-0 border-b",
            isMobile ? 'px-3 py-2' : 'px-0 pb-3'
         )}>
         <h1 className="text-lg sm:text-xl font-bold text-primary flex items-center gap-2">
-          <Bot className="w-5 h-5 sm:w-6 sm:h-6" /> WebGenius
+ <Bot className="w-5 h-5 sm:w-6 sm:h-6" /> WebGenius
+          <span className="text-xs text-muted-foreground opacity-75 font-normal ml-1">
+ "Demo"
+ </span>
         </h1>
         <Button
           onClick={handleDownloadCode}
@@ -902,7 +907,7 @@ const handleUpdateWebsite = useCallback(async () => {
           size={isMobile ? "sm" : "default"}
         >
           <Download className="mr-1.5 h-3.5 w-3.5" />
-          Download
+ Unduh
         </Button>
       </header>
 
@@ -947,7 +952,7 @@ const handleUpdateWebsite = useCallback(async () => {
                  <div className="shrink-0 border-t bg-background shadow-inner px-2 pt-1.5 pb-2">
                      <TabsList className="grid w-full grid-cols-2 h-11">
                          <TabsTrigger value="chat" className="h-full text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                             <Code className="w-4 h-4 mr-1.5"/>
+                             <Code className="w-4 h-4 mr-1.5"/> Input
                              Input
                          </TabsTrigger>
                          <TabsTrigger
