@@ -11,6 +11,7 @@ interface SettingsStore {
   setTheme: (theme: ThemeType) => void;
   setLanguage: (language: LanguageType) => void; 
   setCustomApiKey: (apiKey: string | null) => void;
+  toggleLanguage: () => void;  // Add this line
 }
 
 export const useSettings = create<SettingsStore>()(
@@ -26,6 +27,10 @@ export const useSettings = create<SettingsStore>()(
         set((state) => ({ ...state }));
       },
       setCustomApiKey: (customApiKey) => set({ customApiKey }),
+      toggleLanguage: () => {
+        const currentLang = get().language;
+        set({ language: currentLang === 'en' ? 'id' : 'en' });
+      },
     }),
     {
       name: 'settings-storage',

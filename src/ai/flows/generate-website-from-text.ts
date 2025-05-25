@@ -28,7 +28,16 @@ const GenerateWebsiteOutputSchema = z.array(FileSchema).describe('An array of fi
 export type GenerateWebsiteOutput = z.infer<typeof GenerateWebsiteOutputSchema>;
 
 export async function generateWebsite(input: GenerateWebsiteInput): Promise<GenerateWebsiteOutput> {
-  return generateWebsiteFlow(input);
+  if (!input?.description) {
+    throw new Error('Description is required');
+  }
+  
+  try {
+    return await generateWebsiteFlow(input);
+  } catch (error) {
+    console.error('Generate website flow error:', error);
+    throw error;
+  }
 }
 
 const prompt = ai.definePrompt({
@@ -77,8 +86,26 @@ const generateWebsiteFlow = ai.defineFlow<
     outputSchema: GenerateWebsiteOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    // Ensure output is an array, provide default empty array if not
-    return Array.isArray(output) ? output : [];
+    try {
+      const {output} = await prompt(input);
+      
+      if (!output || !Array.isArray(output)) {
+        throw new Error('Invalid AI response format');
+      }
+
+      const requiredFiles = ['index.html', 'style.css', 'script.js'];
+      const missingFiles = requiredFiles.filter(
+        file => !output.some(f => f.path === file)
+      );
+
+      if (missingFiles.length > 0) {
+        throw new Error(`Missing required files: ${missingFiles.join(', ')}`);
+      }
+
+      return output;
+    } catch (error) {
+      console.error('Generate website flow error:', error);
+      throw error;
+    }
   }
 );

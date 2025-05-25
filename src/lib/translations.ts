@@ -21,6 +21,23 @@ export const translations = {
       title: 'Output',
       description: 'Preview ({path}), lihat file, atau edit kode. Klik \'Jalankan\' buat terapkan perubahan.',
       previewOnly: 'ℹ️ Preview hanya untuk melihat tampilan. Untuk mencoba interaksi seperti klik tombol, unduh filenya dan buka di browser.'
+    },
+    settings: {
+      title: 'Pengaturan',
+      theme: 'Tema',
+      language: 'Bahasa',
+      lightMode: 'Mode Terang',
+      darkMode: 'Mode Gelap',
+      systemMode: 'Mode Sistem'
+    },
+    buttons: {
+      run: 'Jalankan',
+      cancel: 'Batal',
+      close: 'Tutup'
+    },
+    files: {
+      noFiles: 'Belum ada file yang dibuat.',
+      selectFile: 'Pilih file untuk melihat isinya'
     }
   },
   en: {
@@ -45,6 +62,23 @@ export const translations = {
       title: 'Output',
       description: 'Preview ({path}), view files, or edit code. Click \'Run\' to apply changes.',
       previewOnly: 'ℹ️ Preview is for display only. To try interactions like button clicks, download the files and open in browser.'
+    },
+    settings: {
+      title: 'Settings',
+      theme: 'Theme',
+      language: 'Language',
+      lightMode: 'Light Mode',
+      darkMode: 'Dark Mode',
+      systemMode: 'System Mode'
+    },
+    buttons: {
+      run: 'Run',
+      cancel: 'Cancel',
+      close: 'Close'
+    },
+    files: {
+      noFiles: 'No files generated yet.',
+      selectFile: 'Select a file to view its contents'
     }
   }
 };

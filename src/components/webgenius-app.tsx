@@ -35,13 +35,13 @@ import { cn } from '@/lib/utils';
 import { useSettings } from "@/stores/settings";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { useLanguage } from '@/hooks/use-language';
-import { Settings } from 'lucide-react';
+import { Settings, Moon, Sun, Globe } from 'lucide-react';
 import { translations } from '@/lib/translations';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
 // --- Types ---
@@ -568,8 +568,8 @@ const WebGeniusApp: FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false); // Declare isLoading state
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
- const { language, toggleLanguage, setLanguage } = useSettings();
- const t = translations[language];
+ const { theme, setTheme, language, toggleLanguage } = useSettings();
+ const t = translations[language];  // Get translations for current language
 
   const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html', outputError: string | null = null) => {
  console.log("Calling updatePreview", currentFiles, targetPath);
@@ -934,11 +934,25 @@ const handleUpdateWebsite = useCallback(async () => {
                     <Settings className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setLanguage(language === 'en' ? 'id' : 'en')}>
-                    {language === 'en' ? '🇮🇩 Bahasa Indonesia' : '🇬🇧 English'}
+            <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={toggleLanguage}>
+                  <Globe className="mr-2 h-4 w-4" />
+                  {language === 'en' ? '🇮🇩 Indonesia' : '🇬🇧 English'}
                 </DropdownMenuItem>
-            </DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                  {theme === 'dark' ? (
+                    <>
+                      <Sun className="mr-2 h-4 w-4" />
+                      <span>{language === 'en' ? 'Light Mode' : 'Mode Terang'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="mr-2 h-4 w-4" />
+                      <span>{language === 'en' ? 'Dark Mode' : 'Mode Gelap'}</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
         </DropdownMenu>
         <Button
             onClick={handleDownloadCode}
