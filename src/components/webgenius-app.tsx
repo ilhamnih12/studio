@@ -32,6 +32,17 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { useSettings } from "@/stores/settings";
+import { SettingsDialog } from "@/components/settings-dialog";
+import { useLanguage } from '@/hooks/use-language';
+import { Settings } from 'lucide-react';
+import { translations } from '@/lib/translations';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // --- Types ---
 interface FileNode {
@@ -52,34 +63,35 @@ function getLanguageFromPath(path: string): string {
 }
 
 const buildSrcDoc = (htmlContent: string, cssContent: string, jsContent: string): string => {
-    // Commented out the navigation script to test button interactivity
-
-    console.log('JavaScript content for srcDoc:', jsContent);
     return `
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width-device-width, initial-scale=1.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Preview</title>
             <style>
-                body { margin: 0; font-family: sans-serif; background-color: white !important; }
-                html { scroll-behavior: smooth; }
+                /* Ensure CSS loads even if external file fails */
                 ${cssContent}
             </style>
         </head>
         <body>
             ${htmlContent}
             <script>
-                window.onerror = function(message, source, lineno, colno, error) {
-                    console.error("Error in iframe script:", message, source, lineno, colno, error);
+                // Catch script loading errors
+                window.onerror = function(msg, url, line) {
+                    console.log('Preview script error:', msg, 'at line:', line);
+                    return false;
                 };
-                try {
- console.log("Script started from iframe");
- ${jsContent}
- } catch (error) { console.error("Error executing iframe script:", error); }
- </script>
-            console.log("Script finished from iframe");
+                // Wrap execution in DOMContentLoaded and error handling
+                document.addEventListener('DOMContentLoaded', function() {
+                    try {
+                        ${jsContent}
+                    } catch (error) {
+                        console.error("Preview script execution error:", error);
+                    }
+                });
+            </script>
         </body>
         </html>
     `;
@@ -375,7 +387,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
         <div className={cn(
             "flex flex-col h-full",
             isMobile ? 'p-0' : 'p-4',
-            outputError ? 'relative' : '' // Add relative positioning if there's an error
+            outputError ? 'relative' : ''
         )}>
             <Tabs value={activeOutputTab} onValueChange={setActiveOutputTab} className="flex-grow flex flex-col h-full overflow-hidden border-none bg-transparent md:border md:bg-card md:border-border md:rounded-lg md:shadow-sm">
                 <CardHeader className={cn(
@@ -430,7 +442,12 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
 
                 <CardContent className="flex-grow p-0 overflow-auto relative">
                     <TabsContent value="preview" className="mt-0 h-full w-full absolute inset-0" hidden={activeOutputTab !== 'preview'}>
-                        {(isLoading && !files && !previewSrcDoc && !outputError) && (
+    {/* Add info text at the top of preview */}
+    <div className="absolute top-0 left-0 right-0 bg-yellow-50/90 text-yellow-800 px-3 py-1.5 text-xs border-b border-yellow-200 z-10">
+        ℹ️ Preview hanya untuk melihat tampilan. Untuk mencoba interaksi seperti klik tombol, unduh filenya dan buka di browser.
+    </div>
+    
+    {(isLoading && !files && !previewSrcDoc && !outputError) && (
                             <div className="flex items-center justify-center h-full bg-background">
                                 <div className="space-y-4 p-4 w-full max-w-md"><Skeleton className="h-12 w-3/4" /><Skeleton className="h-6 w-full" /><Skeleton className="h-6 w-5/6" /><Skeleton className="h-24 w-full" /><Skeleton className="h-6 w-1/2" /></div>
                             </div>
@@ -442,10 +459,12 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                         )}
                         {previewSrcDoc && !isLoading && (
                             <iframe
-                                srcDoc={previewSrcDoc || '<html><body style="background-color: white;"></body></html>'}
+                                srcDoc={previewSrcDoc}
                                 title="Website Preview"
                                 className="w-full h-full border-0 bg-white"
-                                onLoad={() => console.log("iframe loaded")}
+                                sandbox="allow-scripts"  // Remove allow-same-origin for better security
+                                onError={(e) => console.error('Preview iframe error:', e)}
+                                onLoad={() => console.debug("Preview iframe loaded successfully")}
                             />
                         )}
  {
@@ -453,8 +472,11 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
  // Or if there's an outputError
  (!isLoading && !files && previewSrcDoc && activeOutputTab === 'preview' && !outputError) && (
                             <div className="flex items-center justify-center h-full bg-white p-4">
- <Alert className="w-full max-w-sm text-center" variant="default"><AlertTitle>Preview Gak Tersedia</AlertTitle><AlertDescription>Preview lagi ditutup, silakan klik download dan jalanin lokal ya.</AlertDescription></Alert>
-                            />
+                                <Alert className="w-full max-w-sm text-center" variant="default">
+                                    <AlertTitle>Preview Gak Tersedia</AlertTitle>
+                                    <AlertDescription>Preview lagi ditutup, silakan klik download dan jalanin lokal ya.</AlertDescription>
+                                </Alert>
+                            </div>
                         )}
                         {isLoading && files && activeOutputTab === 'preview' && (
                             <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
@@ -546,6 +568,8 @@ const WebGeniusApp: FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false); // Declare isLoading state
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+ const { language, toggleLanguage, setLanguage } = useSettings();
+ const t = translations[language];
 
   const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html', outputError: string | null = null) => {
  console.log("Calling updatePreview", currentFiles, targetPath);
@@ -891,25 +915,43 @@ const handleUpdateWebsite = useCallback(async () => {
       isMobile ? 'p-0' : 'p-4'
     )}>
        <header className={cn(
-           "flex justify-between items-center shrink-0 border-b",
-           isMobile ? 'px-3 py-2' : 'px-0 pb-3'
-        )}>
+    "flex justify-between items-center shrink-0 border-b bg-gradient-to-r from-background to-primary/5",
+    isMobile ? 'px-3 py-2' : 'px-4 py-3'
+)}>
+    <div className="flex items-center gap-2">
         <h1 className="text-lg sm:text-xl font-bold text-primary flex items-center gap-2">
- <Bot className="w-5 h-5 sm:w-6 sm:h-6" /> WebGenius
-          <span className="text-xs text-muted-foreground opacity-75 font-normal ml-1">
- "Demo"
- </span>
+            <Bot className="w-5 h-5 sm:w-6 sm:h-6" /> 
+            {t.header.title}
         </h1>
+        <span className="px-1.5 py-0.5 text-[10px] font-medium bg-yellow-100 text-yellow-800 rounded-md border border-yellow-200 animate-pulse">
+            {t.header.demo}
+        </span>
+    </div>
+    <div className="flex items-center gap-2">
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="bg-background hover:bg-accent">
+                    <Settings className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setLanguage(language === 'en' ? 'id' : 'en')}>
+                    {language === 'en' ? '🇮🇩 Bahasa Indonesia' : '🇬🇧 English'}
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
         <Button
-          onClick={handleDownloadCode}
-          disabled={!files || isLoading}
-          variant="outline"
-          size={isMobile ? "sm" : "default"}
+            onClick={handleDownloadCode}
+            disabled={!files || isLoading}
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            className="bg-background hover:bg-accent"
         >
-          <Download className="mr-1.5 h-3.5 w-3.5" />
- Unduh
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+            {t.header.download}
         </Button>
-      </header>
+    </div>
+</header>
 
       <div className="flex-grow flex flex-col min-h-0">
           {isMobile ? (
@@ -931,7 +973,6 @@ const handleUpdateWebsite = useCallback(async () => {
       isMobile={Boolean(isMobile)}
    />
  </TabsContent>
- {/* ...existing code... */}
  <TabsContent value="output" className="flex-grow mt-0 overflow-hidden p-0" hidden={activeMobileTab !== 'output'}>
    <OutputPanelContent
       files={files}
@@ -948,7 +989,6 @@ const handleUpdateWebsite = useCallback(async () => {
       previewPath={previewPath} // Ensure previewPath is passed
    />
  </TabsContent>
- {/* ...existing code... */}
                  <div className="shrink-0 border-t bg-background shadow-inner px-2 pt-1.5 pb-2">
                      <TabsList className="grid w-full grid-cols-2 h-11">
                          <TabsTrigger value="chat" className="h-full text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
