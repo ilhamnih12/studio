@@ -20,7 +20,11 @@ export const translations = {
     preview: {
       title: 'Output',
       description: 'Preview ({path}), lihat file, atau edit kode. Klik \'Jalankan\' buat terapkan perubahan.',
-      previewOnly: 'ℹ️ Preview hanya untuk melihat tampilan. Untuk mencoba interaksi seperti klik tombol, unduh filenya dan buka di browser.'
+      previewOnly: 'ℹ️ Preview hanya untuk melihat tampilan. Untuk mencoba interaksi seperti klik tombol, unduh filenya dan buka di browser.',
+      noWebsite: 'Masukkan deskripsi dan klik "Buat Website" buat lihat hasilnya.',
+      notAvailable: 'Preview Gak Tersedia',
+      notAvailableDesc: 'Preview lagi ditutup, silakan klik download dan jalanin lokal ya.',
+      error: 'Ada error. Cek panel input ya.'
     },
     settings: {
       title: 'Pengaturan',
@@ -38,6 +42,11 @@ export const translations = {
     files: {
       noFiles: 'Belum ada file yang dibuat.',
       selectFile: 'Pilih file untuk melihat isinya'
+    },
+    output: {
+      preview: 'Preview',
+      files: 'File',
+      run: 'Jalankan'
     }
   },
   en: {
@@ -61,7 +70,11 @@ export const translations = {
     preview: {
       title: 'Output',
       description: 'Preview ({path}), view files, or edit code. Click \'Run\' to apply changes.',
-      previewOnly: 'ℹ️ Preview is for display only. To try interactions like button clicks, download the files and open in browser.'
+      previewOnly: 'ℹ️ Preview is for display only. To try interactions like button clicks, download the files and open in browser.',
+      noWebsite: 'Enter a description and click "Generate Website" to see the result.',
+      notAvailable: 'Preview Not Available',
+      notAvailableDesc: 'Preview is currently closed, please download and run locally.',
+      error: 'There was an error. Please check the input panel.'
     },
     settings: {
       title: 'Settings',
@@ -79,6 +92,11 @@ export const translations = {
     files: {
       noFiles: 'No files generated yet.',
       selectFile: 'Select a file to view its contents'
+    },
+    output: {
+      preview: 'Preview',
+      files: 'Files',
+      run: 'Run'
     }
   }
 };

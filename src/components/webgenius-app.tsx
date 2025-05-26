@@ -43,12 +43,52 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from 'react-i18next';
 
 // --- Types ---
 interface FileNode {
     path: string;
     content: string;
     type: 'file' | 'folder';
+}
+
+// Add translations interface
+interface Translations {
+  files: {
+    noFiles: string;
+    selectFile: string;
+  };
+  input: {
+    title: string;
+    description: string;
+    placeholder: string;
+    feedback: string;
+    feedbackPlaceholder: string;
+    generating: string;
+    updating: string;
+    generate: string;
+    generateAgain: string;
+  };
+  header: {
+    title: string;
+    subtitle: string;
+    demo: string;
+    download: string;
+  };
+  output: {
+    preview: string;
+    files: string;
+    run: string;
+  };
+  preview: {
+    title: string;
+    description: string;
+    previewOnly: string;
+    noWebsite: string;
+    notAvailable: string;
+    notAvailableDesc: string;
+    error: string;
+  };
 }
 
 // --- Helper Functions ---
@@ -105,9 +145,10 @@ interface FileExplorerProps {
     onSelectFile: (path: string) => void;
     isLoading: boolean;
     className?: string;
+    translations: Translations; // Update type from any to Translations
 }
 
-const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelectFile, isLoading, className }) => {
+const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelectFile, isLoading, className, translations }) => {
     if (isLoading && !files) {
         return (
             <div className={cn("p-2 space-y-2", className ?? '')}>
@@ -121,7 +162,7 @@ const FileExplorer: FC<FileExplorerProps> = ({ files, selectedFilePath, onSelect
     if (!files || files.length === 0) {
         return (
             <div className={cn("p-2 text-sm text-muted-foreground", className ?? '')}>
-                Belum ada file yang dibuat.
+                {translations.files.noFiles}
             </div>
         );
     }
@@ -157,9 +198,10 @@ interface EditableCodeDisplayProps {
  isLoading: boolean;
     onChange: (newContent: string) => void;
     className?: string;
+    translations: Translations; // Update type from any to Translations
 }
 
-const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, isLoading, onChange, className }) => {
+const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, isLoading, onChange, className, translations }) => {
  // Renamed the language prop
     if (isLoading) {
  // Use isLoading from props
@@ -177,7 +219,7 @@ const EditableCodeDisplay: FC<EditableCodeDisplayProps> = ({ content, language, 
      if (content === null) {
         return (
             <div className={cn("flex items-center justify-center h-full text-sm text-muted-foreground p-4", className || '')}>
-                Pilih file buat lihat atau edit isinya.
+                {translations.files.selectFile}
             </div>
         );
     }
@@ -212,6 +254,8 @@ interface InputPanelProps {
     handleUpdateWebsite: () => void;
     error: string | null;
  isMobile: boolean;
+    translations: any; // Add translations prop
+    language: string; // Add language prop
 }
 
 const InputPanelContent: FC<InputPanelProps> = ({
@@ -227,6 +271,8 @@ const InputPanelContent: FC<InputPanelProps> = ({
     handleUpdateWebsite,
     error,
     isMobile,
+    translations,
+    language,
 }) => {
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setDescription(e.target.value);
@@ -242,9 +288,9 @@ const InputPanelContent: FC<InputPanelProps> = ({
     )}>
         <Card className="flex flex-col flex-grow shadow-sm border-none bg-transparent md:border md:bg-card md:border-border">
             <CardHeader className="pt-2 pb-2 md:pt-6 md:pb-6">
-                <CardTitle className="text-lg md:text-xl">Jelaskan Website-mu</CardTitle>
+                <CardTitle className="text-lg md:text-xl">{translations.input.title}</CardTitle>
                 <CardDescription>
-                    Masukkan deskripsi atau minta update buat website yang sudah dibuat.
+                    {translations.input.description}
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col space-y-4 pt-0 pb-2 md:pb-6">
@@ -252,7 +298,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
                     <Label htmlFor="description" className="mb-2">Description</Label>
                     <Textarea
                         id="description"
-                        placeholder="Contoh: Landing page buat kedai kopi..."
+                        placeholder={translations.input.placeholder}
                         value={description}
                         onChange={handleDescriptionChange}
                         className="flex-grow min-h-[150px] resize-none text-sm"
@@ -261,11 +307,11 @@ const InputPanelContent: FC<InputPanelProps> = ({
                 </div>
                 {hasGeneratedCode && (
                     <div className="pt-4 border-t space-y-2">
-                        <Label htmlFor="feedback">Minta Update (Opsional)</Label>
+                        <Label htmlFor="feedback">{translations.input.feedback}</Label>
                         <div className="flex gap-2 items-center">
                             <Input
                                 id="feedback"
-                                placeholder="Contoh: Ganti background jadi biru muda"
+                                placeholder={translations.input.feedbackPlaceholder}
                                 value={userFeedback}
                                 onChange={handleFeedbackChange}
                                 disabled={isLoading}
@@ -282,7 +328,7 @@ const InputPanelContent: FC<InputPanelProps> = ({
                                 disabled={isLoading || !userFeedback.trim()}
                                 size="icon"
                                 variant="ghost"
-                                aria-label="Kirim Feedback"
+                                aria-label={translations.input.feedback}
                                 className="h-10 w-10 flex-shrink-0"
                             >
                                 <Send className="h-5 w-5" />
@@ -298,16 +344,16 @@ const InputPanelContent: FC<InputPanelProps> = ({
                     size={isMobile ? "lg" : "default"}
                 >
                     {isGenerating ? (
-                        <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...</>
+                        <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>{translations.input.generating}</>
                     ) : isUpdating ? (
-                        <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating...</>
+                        <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>{translations.input.updating}</>
                     ) : (
-                        hasGeneratedCode ? 'Buat / Buat Lagi' : 'Buat Website'
+                        hasGeneratedCode ? translations.input.generateAgain : translations.input.generate
                     )}
                 </Button>
                  {hasGeneratedCode && !isLoading && (
                     <p className="text-xs text-muted-foreground text-center mt-1">
-                        Ubah deskripsi dan klik lagi buat buat ulang seluruh website.
+                        {language === 'en' ? 'Change the description and click again to regenerate the entire website.' : 'Ubah deskripsi dan klik lagi buat buat ulang seluruh website.'}
                     </p>
                  )}
             </CardFooter>
@@ -337,11 +383,13 @@ interface OutputPanelProps {
     onRunCode: () => void;
  previewPath: string | null; // Add previewPath here
     error: string | null; // Add error here
+    translations: Translations; // Update type from any to Translations
+    language: string;
 }
 
 const OutputPanelContent: FC<OutputPanelProps> = ({
     files,
-    isLoading, // Keep isLoading prop name for internal use
+    isLoading,
     isMobile,
     activeOutputTab,
     setActiveOutputTab,
@@ -349,8 +397,11 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
     onSelectFile,
     onFileContentChange,
     onRunCode,
- previewPath,
-    previewSrcDoc, error: outputError, // Renamed the prop to outputError
+    previewPath,
+    previewSrcDoc,
+    error: outputError,
+    translations,
+    language
 }) => {
     const selectedFile = useMemo(() => files?.find(f => f.path === selectedFilePath), [files, selectedFilePath]);
     const editorLanguage = selectedFile ? getLanguageFromPath(selectedFile.path) : 'plaintext';
@@ -395,9 +446,9 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                 ) as string | undefined}>
                     {!isMobile && files && !isLoading && !outputError && (
                         <div>
-                            <CardTitle className="text-lg md:text-xl">Output</CardTitle>
+                            <CardTitle className="text-lg md:text-xl">{translations.preview.title}</CardTitle>
                                                         <CardDescription>
-                                Preview ({previewPath || 'N/A'}), lihat file, atau edit kode. Klik 'Jalankan' buat terapkan perubahan.
+                                {translations.preview.description.replace('{path}', previewPath || 'N/A')}
                                                         </CardDescription>
                         </div>
                     )}
@@ -412,10 +463,10 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                             )}
                         >
                             <TabsTrigger value="preview" className="text-xs px-2 h-full" disabled={!files && !isLoading && !outputError}>
-                                <Eye className="w-3.5 h-3.5 mr-1" /> Preview {previewPath && `(${previewPath})`}
+                                <Eye className="w-3.5 h-3.5 mr-1" /> {translations.output.preview} {previewPath && `(${previewPath})`}
                             </TabsTrigger>
                             <TabsTrigger value="files" className="text-xs px-2 h-full" disabled={(!files || files.length === 0) && !isLoading}>
-                                <Folder className="w-3.5 h-3.5 mr-1" /> Files
+                                <Folder className="w-3.5 h-3.5 mr-1" /> {translations.output.files}
                             </TabsTrigger>
                             <TabsTrigger value="html" className="text-xs px-2 h-full" disabled={(!files || !indexHtml) && !isLoading}>
                                 <FileCode className="w-3.5 h-3.5 mr-1" /> HTML
@@ -435,7 +486,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                             disabled={!files || isLoading}
                             aria-label="Run Code Changes"
                         >
-                                                        <Play className="w-5 h-5" /> Jalankan
+                                                        <Play className="w-5 h-5" /> {translations.output.run}
                         </Button>
                     </div>
                 </CardHeader>
@@ -444,7 +495,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     <TabsContent value="preview" className="mt-0 h-full w-full absolute inset-0" hidden={activeOutputTab !== 'preview'}>
     {/* Add info text at the top of preview */}
     <div className="absolute top-0 left-0 right-0 bg-yellow-50/90 text-yellow-800 px-3 py-1.5 text-xs border-b border-yellow-200 z-10">
-        ℹ️ Preview hanya untuk melihat tampilan. Untuk mencoba interaksi seperti klik tombol, unduh filenya dan buka di browser.
+        {translations.preview.previewOnly}
     </div>
     
     {(isLoading && !files && !previewSrcDoc && !outputError) && (
@@ -454,7 +505,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                         )}
                         {(!isLoading && !files && !outputError) && (
                             <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center bg-background">
-                                <p>Masukkan deskripsi dan klik "Buat Website" buat lihat hasilnya.</p>
+                                <p>{translations.preview.noWebsite}</p>
                             </div>
                         )}
                         {previewSrcDoc && !isLoading && (
@@ -473,8 +524,8 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
  (!isLoading && !files && previewSrcDoc && activeOutputTab === 'preview' && !outputError) && (
                             <div className="flex items-center justify-center h-full bg-white p-4">
                                 <Alert className="w-full max-w-sm text-center" variant="default">
-                                    <AlertTitle>Preview Gak Tersedia</AlertTitle>
-                                    <AlertDescription>Preview lagi ditutup, silakan klik download dan jalanin lokal ya.</AlertDescription>
+                                    <AlertTitle>{translations.preview.notAvailable}</AlertTitle>
+                                    <AlertDescription>{translations.preview.notAvailableDesc}</AlertDescription>
                                 </Alert>
                             </div>
                         )}
@@ -488,7 +539,7 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                         )}
                         {(outputError && !files) && (
                             <div className="flex items-center justify-center h-full text-destructive p-4 text-center bg-background" hidden={activeOutputTab !== 'preview' || !outputError}>
-                                <p>Ada error. Cek panel input ya.</p>
+                                <p>{translations.preview.error}</p>
                             </div>
                         )}
                     </TabsContent>
@@ -496,18 +547,20 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     <TabsContent value="files" className="mt-0 h-full w-full absolute inset-0 flex flex-col md:flex-row" hidden={activeOutputTab !== 'files'}>
                         <FileExplorer
                             files={files}
-                            selectedFilePath={selectedFilePath} // Accepts string | null
+                            selectedFilePath={selectedFilePath}
                             onSelectFile={onSelectFile}
-                            isLoading={isLoading} // Pass isLoading
+                            isLoading={isLoading}
                             className="w-full md:w-1/4 md:max-w-[250px] border-b md:border-b-0 md:border-r shrink-0 h-1/3 md:h-full"
+                            translations={translations as Translations}
                         />
                         <div className="flex-grow relative min-h-0">
                             <EditableCodeDisplay
-                                content={selectedFile?.content as string | null} // Accepts string | null | undefined
-                                language={editorLanguage} // Accepts string
+                                content={selectedFile?.content as string | null}
+                                language={editorLanguage}
                                 isLoading={isLoading && !selectedFile}
-                                onChange={(newContent) => selectedFilePath && onFileContentChange(selectedFilePath, newContent)} // Check selectedFilePath is not null
+                                onChange={(newContent) => selectedFilePath && onFileContentChange(selectedFilePath, newContent)}
                                 className="absolute inset-0"
+                                translations={translations}
                             />
                         </div>
                     </TabsContent>
@@ -515,28 +568,31 @@ const OutputPanelContent: FC<OutputPanelProps> = ({
                     <TabsContent value="html" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'html'}>
                         <EditableCodeDisplay
                             content={indexHtml}
-                            language="html" // Accepts string
+                            language="html"
                             isLoading={isLoading}
-                            onChange={(newContent) => previewPath && onFileContentChange(previewPath, newContent)} // Check previewPath is not null
+                            onChange={(newContent) => previewPath && onFileContentChange(previewPath, newContent)}
                             className="h-full"
+                            translations={translations}
                         />
                     </TabsContent>
                     <TabsContent value="css" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'css'}>
                         <EditableCodeDisplay
                             content={styleCss}
-                            language="css" // Accepts string
+                            language="css"
                             isLoading={isLoading}
                             onChange={(newContent) => onFileContentChange('style.css', newContent)}
                             className="h-full"
+                            translations={translations}
                         />
                     </TabsContent>
                     <TabsContent value="js" className="mt-0 h-full w-full absolute inset-0 p-1" hidden={activeOutputTab !== 'js'}>
                         <EditableCodeDisplay
                             content={scriptJs}
-                            language="javascript" // Accepts string
+                            language="javascript"
                             isLoading={isLoading}
                             onChange={(newContent) => onFileContentChange('script.js', newContent)}
                             className="h-full"
+                            translations={translations}
                         />
                     </TabsContent>
                 </CardContent>
@@ -891,30 +947,12 @@ const handleUpdateWebsite = useCallback(async () => {
          fallbackLink.click();
          document.body.removeChild(fallbackLink);
          URL.revokeObjectURL(fallbackLink.href);
-         toast({ variant: 'default', title: 'Downloaded HTML Only', description: 'Could not zip files, downloaded main HTML.' });
-     }); // Corrected closing parenthesis for .catch
+     });
   }, [files, toast]);
- 
-
-  // --- Main Render ---
-  // Wait for isMobile to be determined before rendering the layout
-  if (typeof isMobile === 'undefined') {
-    return (
-        <div className="flex flex-col h-screen bg-muted/20 overflow-hidden items-center justify-center">
-            <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-        </div>
-    );
-  }
 
   return (
-    <div className={cn(// Added comma
-      "flex flex-col h-screen bg-muted/20 overflow-hidden",
-      isMobile ? 'p-0' : 'p-4'
-    )}>
-       <header className={cn(
+    <div className={cn("flex flex-col h-screen overflow-hidden", theme)}>
+<header className={cn(
     "flex justify-between items-center shrink-0 border-b bg-gradient-to-r from-background to-primary/5",
     isMobile ? 'px-3 py-2' : 'px-4 py-3'
 )}>
@@ -985,6 +1023,8 @@ const handleUpdateWebsite = useCallback(async () => {
       handleUpdateWebsite={handleUpdateWebsite}
       error={error}
       isMobile={Boolean(isMobile)}
+      translations={translations[language] as Translations}
+      language={language}
    />
  </TabsContent>
  <TabsContent value="output" className="flex-grow mt-0 overflow-hidden p-0" hidden={activeMobileTab !== 'output'}>
@@ -992,7 +1032,7 @@ const handleUpdateWebsite = useCallback(async () => {
       files={files}
       isLoading={isLoading} // Pass isLoading
       previewSrcDoc={previewSrcDoc} // Pass previewSrcDoc as is (can be null)
-      isMobile={isMobile}
+      isMobile={Boolean(isMobile)}
       activeOutputTab={activeOutputTab} // Pass activeOutputTab
       setActiveOutputTab={setActiveOutputTab} // Pass setActiveOutputTab
       selectedFilePath={selectedFilePath} // Pass selectedFilePath
@@ -1001,6 +1041,8 @@ const handleUpdateWebsite = useCallback(async () => {
       onRunCode={handleRunCode}
       error={error} // Pass the missing prop
       previewPath={previewPath} // Ensure previewPath is passed
+      translations={translations[language] as Translations}
+      language={language}
    />
  </TabsContent>
                  <div className="shrink-0 border-t bg-background shadow-inner px-2 pt-1.5 pb-2">
@@ -1036,6 +1078,8 @@ const handleUpdateWebsite = useCallback(async () => {
                     handleUpdateWebsite={handleUpdateWebsite}
                     error={error}
  isMobile={Boolean(isMobile)}
+                    translations={translations[language] as Translations}
+                    language={language}
                  />
               </ResizablePanel>
 
@@ -1046,7 +1090,7 @@ const handleUpdateWebsite = useCallback(async () => {
                     files={files}
                     isLoading={isLoading} // Pass isLoading
                     previewSrcDoc={previewSrcDoc} // Pass previewSrcDoc as is
-                    isMobile={isMobile}
+                    isMobile={Boolean(isMobile)}
                     activeOutputTab={activeOutputTab} // Pass activeOutputTab
                     setActiveOutputTab={setActiveOutputTab} // Pass setActiveOutputTab
                     selectedFilePath={selectedFilePath} // Pass selectedFilePath
@@ -1055,6 +1099,8 @@ const handleUpdateWebsite = useCallback(async () => {
                     onRunCode={handleRunCode} // Pass onRunCode
  previewPath={previewPath} // Ensure previewPath is passed
                     error={error} // Pass the error state to the OutputPanelContent
+                    translations={translations[language] as Translations}
+                    language={language}
                  />
               </ResizablePanel>
             </ResizablePanelGroup>
