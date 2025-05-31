@@ -44,6 +44,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/navigation';
 
 // --- Types ---
 interface FileNode {
@@ -626,6 +627,7 @@ const WebGeniusApp: FC = () => {
  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
  const { theme, setTheme, language, toggleLanguage } = useSettings();
  const t = translations[language];  // Get translations for current language
+  const router = useRouter();
 
   const updatePreview = useCallback((currentFiles: FileNode[] | null, targetPath: string = 'index.html', outputError: string | null = null) => {
  console.log("Calling updatePreview", currentFiles, targetPath);
@@ -950,22 +952,33 @@ const handleUpdateWebsite = useCallback(async () => {
      });
   }, [files, toast]);
 
+  const handleLogoClick = () => {
+    localStorage.setItem('webgenius-show-app', 'false');
+    window.location.reload();
+  };
+
   return (
     <div className={cn("flex flex-col h-screen overflow-hidden", theme)}>
-<header className={cn(
-    "flex justify-between items-center shrink-0 border-b bg-gradient-to-r from-background to-primary/5",
-    isMobile ? 'px-3 py-2' : 'px-4 py-3'
-)}>
-    <div className="flex items-center gap-2">
-        <h1 className="text-lg sm:text-xl font-bold text-primary flex items-center gap-2">
-            <Bot className="w-5 h-5 sm:w-6 sm:h-6" /> 
-            {t.header.title}
-        </h1>
-        <span className="px-1.5 py-0.5 text-[10px] font-medium bg-yellow-100 text-yellow-800 rounded-md border border-yellow-200 animate-pulse">
+      <header className={cn(
+        "flex justify-between items-center shrink-0 border-b bg-gradient-to-r from-background to-primary/5",
+        isMobile ? 'px-3 py-2' : 'px-4 py-3'
+      )}>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            className="p-0 hover:bg-transparent flex items-center gap-2"
+            onClick={handleLogoClick}
+          >
+            <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <h1 className="text-lg sm:text-xl font-bold text-primary">
+              {t.header.title}
+            </h1>
+          </Button>
+          <span className="px-1.5 py-0.5 text-[10px] font-medium bg-yellow-100 text-yellow-800 rounded-md border border-yellow-200 animate-pulse">
             {t.header.demo}
-        </span>
-    </div>
-    <div className="flex items-center gap-2">
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="bg-background hover:bg-accent">
@@ -1003,8 +1016,7 @@ const handleUpdateWebsite = useCallback(async () => {
             {t.header.download}
         </Button>
     </div>
-</header>
-
+      </header>
       <div className="flex-grow flex flex-col min-h-0">
           {isMobile ? (
  <Tabs value={activeMobileTab} onValueChange={(value) => setActiveMobileTab(value as 'chat' | 'output')} className="flex flex-col flex-grow overflow-hidden border-none bg-transparent">
